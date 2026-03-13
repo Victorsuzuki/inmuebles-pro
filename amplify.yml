@@ -1,7 +1,6 @@
 version: 1
 applications:
-  - appRoot: web_app/server
-    backend:
+  - backend:
       phases:
         preBuild:
           commands:
@@ -16,8 +15,8 @@ applications:
       cache:
         paths:
           - node_modules/**/*
-  - appRoot: web_app/client
-    frontend:
+    appRoot: web_app/server
+  - frontend:
       phases:
         preBuild:
           commands:
@@ -44,3 +43,4 @@ applications:
               value: '1; mode=block'
             - key: 'X-Content-Type-Options'
               value: 'nosniff'
+    appRoot: web_app/client
