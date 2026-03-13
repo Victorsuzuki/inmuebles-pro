@@ -1,0 +1,38 @@
+service: inmuebles-pro-api
+
+frameworkVersion: '3'
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: eu-north-1
+  memorySize: 512
+  timeout: 29
+  httpApi:
+    cors: true
+  environment:
+    JWT_SECRET: ${env:JWT_SECRET}
+    CLIENT_URL: ${env:CLIENT_URL}
+    SPREADSHEET_ID: ${env:SPREADSHEET_ID}
+    GOOGLE_CLIENT_EMAIL: ${env:GOOGLE_CLIENT_EMAIL}
+    GOOGLE_PRIVATE_KEY: ${env:GOOGLE_PRIVATE_KEY}
+    GOOGLE_DRIVE_FOLDER_ID: ${env:GOOGLE_DRIVE_FOLDER_ID}
+    FIREBASE_STORAGE_BUCKET: ${env:FIREBASE_STORAGE_BUCKET}
+
+package:
+  patterns:
+    - '!.git/**'
+    - '!.serverless/**'
+    - '!node_modules/nodemon/**'
+    - '!scripts/**'
+    - '!.env'
+    - '!.gitignore'
+    - '!package-lock.json'
+    - '!README.md'
+
+functions:
+  api:
+    handler: lambda.handler
+    events:
+      - httpApi: '*'

@@ -1,17 +1,16 @@
-require('dotenv').config();
-const { google } = require('googleapis');
+const drive = require('@googleapis/drive');
 
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 const DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-const auth = new google.auth.JWT({
+const auth = new drive.auth.JWT({
     email: CLIENT_EMAIL,
     key: PRIVATE_KEY,
     scopes: ['https://www.googleapis.com/auth/drive']
 });
 
-const drive = google.drive({ version: 'v3', auth });
+const drive = driveLib.drive({ version: 'v3', auth });
 
 async function verify() {
     console.log('Verifying folder accessibility...');

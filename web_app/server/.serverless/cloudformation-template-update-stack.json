@@ -1,0 +1,376 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ApiLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/inmuebles-pro-api-dev-api"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "inmuebles-pro-api",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup",
+                    "logs:TagResource"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/inmuebles-pro-api-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/inmuebles-pro-api-dev*:*:*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "inmuebles-pro-api",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "ApiLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/inmuebles-pro-api/dev/1773428559582-2026-03-13T19:02:39.582Z/inmuebles-pro-api.zip"
+        },
+        "Handler": "lambda.handler",
+        "Runtime": "nodejs20.x",
+        "FunctionName": "inmuebles-pro-api-dev-api",
+        "MemorySize": 512,
+        "Timeout": 29,
+        "Environment": {
+          "Variables": {
+            "JWT_SECRET": "secret_key_local",
+            "CLIENT_URL": "https://main.d2fl2hfdw798vb.amplifyapp.com",
+            "SPREADSHEET_ID": "1sB5_j_T0nrYKjdX9yYWRR0YQJ1q66z_xel2rpT588Es",
+            "GOOGLE_CLIENT_EMAIL": "gestor-inmuebles@inmuebles-app-487619.iam.gserviceaccount.com",
+            "GOOGLE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC+SCgQa4C5Uevu\nLpRtySDdhIeKpF60IpH3L/jUnSq7jOOcG2cGChoTJ9kYh34SWbhKOsKS9r5+miFJ\nKesEihS8lVd3a7It+LQXOUcjrKKBQOeZtKIKiNkbPTnOhOQd63l4rD89PJSlrP11\nDIwbiVTxlRIcKJnjf1Z0OPl9xZ22dFnXKBwyYBAc/HANDM/UHr+8QZyXlHLb/2td\nNRMY77L1Gy0zAag6EfoRCpp55IiK/YSTMyqp45HQEzHEZSj1Dl1oZpwR1+xqbxoU\n85VU1HEtKFAVitjCt6K+1jODUqA1maEo3fPV5H4n6f6sk4nm9Qv69ot4UarteQFB\nqBmnKlQpAgMBAAECggEAB24btbkY65jzE0J5ichCMrGE4GlMMxEBgvXk1m/fq2H+\n657XTkamiivIFVDfH6TQu9dLtz+QJIiXYaW+d1d+o/bZ6urHPaEkmR6OXv/T+vjs\n7Op/LwBKfVQ4oGOTNnGLiqaBM/6HAxQm89iI/7SZtEhA+YgCqv3ogz0hTY5h+u3t\nUgOIb9KXpERdbIFj0UWnhprlGAOFPxOg3lAO73+W56eI88kpLuCxPw+a+kW/I88H\n58lOcAa0gI1GCwo4tTITNJZNxWC1/i2uFLTFBwnxtevzdzFse35y2AQW9AQe/r6j\nSeaWwxTdGbqLgi/PQtNvKly1GDD8DQdzfuxscyx/gQKBgQD2n8ZEDX+YmuxvsKxy\nC7h3AlIHKJ6qk5yhcpLiqs6xQwEi9fMVxTF1l8j2TPpRAhfpr479yRRSrrX8kOJM\nUo8uOI+3KuNmssKIbM63m5KSPIPJL0HsQo/JtKY3qdK2PQoGTmlQw5+pCDd8VGBG\n27dwNjU+5AmVh2KvB7/6EFFC6QKBgQDFhAp+M4d2qdnhLedGJlpIiJwGjLv8UzPJ\nJaucATQ/iP42Bai6+98DSzJILgJxVU+0d3b4VZyzXwq8RszJ3qG5J0TOV7SncMxQ\nD7Z0BYmWmByKHp/apORyv5WD0A42uoAc2JV3PzjvX70wc0t3qnYjTdvJt62SGbOI\niH4wlek/QQKBgF9U0Xn60ci2khB2daI7/5kZL4YO4I5FMvWBaV/u8Ki6otTVx5ox\nuHWhL5BtnxDzQzUUpKxbLtzrJfO0OZWREEGooX0HOhG3pdTAYoO8wkJ+295Hwy7F\nZ/lrOBkqLwY8wARCCRmsFKptP61ynCinw9e/TIO7+CxxweawkzfhWNgJAoGAUc6G\nqg6dpMBkxadFiwCHlFNAjFXt5mxvnnhDw7Gb+lS7NZTSdd+sVqjmgo7L5DT5dj2k\nwOZ0qLZMs/5/A316bj2deflJkbBebyqS3ysL+Zu29l4Ix35UQFKpkpaxzGkidtAd\n1+4PntWAfnjCYSXxGF4/EiVJdqG+gmZGHcl5egECgYAtqBQKHhgVq7mb3WIHc4Zl\nvfiEWDjwn/RZWF8Z0m5pfmOQXmoWwS61LK0qZBinFTSQEgnvMuOgwaEPa2IZU81g\nQ9CRWS/qoHVi/J1RF0S2fLoz4QsOdOiI6ya9FuO04TYCl/1oBrZNoHKxKBcLqWFz\nVPL+J2Bs0KOJkZtGjr+dJQ==\n-----END PRIVATE KEY-----",
+            "GOOGLE_DRIVE_FOLDER_ID": "129LmYpikS1DgTpqbq267EbtB8fUYKuTW",
+            "FIREBASE_STORAGE_BUCKET": "inmuebles-app-487619"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "ApiLogGroup"
+      ]
+    },
+    "ApiLambdaVersionQ2hKzfnj7rRgpzaJcQQBE8Ei6e0iRzOI3l1XK9ct4": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "ApiLambdaFunction"
+        },
+        "CodeSha256": "/Wn1onPbDfTET7UDbS7CFceSAzokW0ql8aSggI+fqFg="
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": "dev-inmuebles-pro-api",
+        "ProtocolType": "HTTP",
+        "CorsConfiguration": {
+          "AllowHeaders": [
+            "Content-Type",
+            "X-Amz-Date",
+            "Authorization",
+            "X-Api-Key",
+            "X-Amz-Security-Token",
+            "X-Amz-User-Agent",
+            "X-Amzn-Trace-Id"
+          ],
+          "AllowMethods": [
+            "OPTIONS",
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "HEAD",
+            "DELETE"
+          ],
+          "AllowOrigins": [
+            "*"
+          ]
+        }
+      }
+    },
+    "HttpApiStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "DetailedMetricsEnabled": false
+        }
+      }
+    },
+    "ApiLambdaPermissionHttpApi": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ApiLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "HttpApi"
+              },
+              "/*"
+            ]
+          ]
+        }
+      }
+    },
+    "HttpApiIntegrationApi": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "ApiLambdaFunction",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 30000
+      }
+    },
+    "HttpApiRouteDefault": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "$default",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "HttpApiIntegrationApi"
+              }
+            ]
+          ]
+        }
+      },
+      "DependsOn": "HttpApiIntegrationApi"
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "Export": {
+        "Name": "sls-inmuebles-pro-api-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "ApiLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "ApiLambdaVersionQ2hKzfnj7rRgpzaJcQQBE8Ei6e0iRzOI3l1XK9ct4"
+      },
+      "Export": {
+        "Name": "sls-inmuebles-pro-api-dev-ApiLambdaFunctionQualifiedArn"
+      }
+    },
+    "HttpApiId": {
+      "Description": "Id of the HTTP API",
+      "Value": {
+        "Ref": "HttpApi"
+      },
+      "Export": {
+        "Name": "sls-inmuebles-pro-api-dev-HttpApiId"
+      }
+    },
+    "HttpApiUrl": {
+      "Description": "URL of the HTTP API",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "HttpApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            }
+          ]
+        ]
+      },
+      "Export": {
+        "Name": "sls-inmuebles-pro-api-dev-HttpApiUrl"
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-const { google } = require('googleapis');
+const drive = require('@googleapis/drive');
 const path = require('path');
 const stream = require('stream');
 
@@ -11,13 +11,13 @@ let driveClient;
 function getDriveClient() {
     if (driveClient) return driveClient;
 
-    const auth = new google.auth.JWT({
+    const auth = new drive.auth.JWT({
         email: CLIENT_EMAIL,
         key: PRIVATE_KEY,
         scopes: ['https://www.googleapis.com/auth/drive']
     });
 
-    driveClient = google.drive({ version: 'v3', auth });
+    driveClient = drive.drive({ version: 'v3', auth });
     return driveClient;
 }
 
