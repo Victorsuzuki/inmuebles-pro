@@ -1,0 +1,17 @@
+
+[STEP 1] Login Admin
+Ô£à Login successful
+
+[STEP 2] Create Client
+Ô£à Client created: c601c57c-4b60-4911-aeb6-1b4bfff31878
+
+[STEP 3] Create Property
+Ô£à Property created: 4826f61c-6cbd-4969-a1ff-cf0751604aed (Status: Disponible)
+
+[STEP 4] Create Event (Alquiler, Pendiente)
+Ô£à Event created: 1df5d5d7-53a2-422c-9311-9446d159b281
+
+[STEP 5] Verify Property Status (Pending Event -> Alquilado)
+ÔØî Test failed Error: Property status should be Alquilado, got Disponible
+    at runTest (D:\Escritorio\TMP\desarrollos\Inmuebles_pro\web_app\server\scripts\test_e2e.js:92:50)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)

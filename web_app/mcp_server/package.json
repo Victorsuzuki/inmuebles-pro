@@ -1,0 +1,20 @@
+{
+    "name": "inmuebles-mcp-server",
+    "version": "1.0.0",
+    "description": "MCP Server for Inmuebles Pro",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "nodemon index.js"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^0.6.0",
+        "dotenv": "^16.4.5",
+        "google-auth-library": "^10.5.0",
+        "google-spreadsheet": "^5.2.0",
+        "uuid": "^10.0.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.4"
+    }
+}
