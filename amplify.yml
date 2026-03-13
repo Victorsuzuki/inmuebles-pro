@@ -1,38 +1,38 @@
 version: 1
 applications:
-  - backend:
+  - appRoot: web_app/server
+    backend:
       phases:
         preBuild:
           commands:
-            - cd web_app/server
             - npm ci
         build:
           commands:
             - echo "Backend build phase - No compilation needed for Node.js Express"
       artifacts:
-        baseDirectory: web_app/server
+        baseDirectory: .
         files:
           - '**/*'
       cache:
         paths:
-          - web_app/server/node_modules/**/*
-  - frontend:
+          - node_modules/**/*
+  - appRoot: web_app/client
+    frontend:
       phases:
         preBuild:
           commands:
-            - cd web_app/client
             - npm ci
         build:
           commands:
             - echo "VITE_API_URL=$VITE_API_URL" >> .env.production
             - npm run build
       artifacts:
-        baseDirectory: web_app/client/dist
+        baseDirectory: dist
         files:
           - '**/*'
       cache:
         paths:
-          - web_app/client/node_modules/**/*
+          - node_modules/**/*
       customHeaders:
         - pattern: '**/*'
           headers:
