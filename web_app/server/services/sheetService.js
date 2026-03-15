@@ -4,7 +4,11 @@ const { JWT } = require('google-auth-library');
 // Config variables
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'); // Handle newlines in env var
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY 
+    ? process.env.GOOGLE_PRIVATE_KEY
+        .replace(/^"(.*)"$/, '$1') // Remove surrounding quotes if any
+        .replace(/\\n/g, '\n')     // Replace escaped newlines
+    : null;
 
 let doc;
 
@@ -21,7 +25,8 @@ async function getDoc() {
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
-    doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    doc = new GoogleSpreadsheet(SPREADSHEET_ID);
+    await doc.useServiceAccountAuth(serviceAccountAuth);
     await doc.loadInfo();
     return doc;
 }

@@ -4,21 +4,36 @@ const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 const DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-const auth = new drive.auth.JWT({
+const auth = new driveLib.auth.JWT({
     email: CLIENT_EMAIL,
     key: PRIVATE_KEY,
     scopes: ['https://www.googleapis.com/auth/drive']
 });
 
-const drive = driveLib.drive({ version: 'v3', auth });
+const driveInstance = driveLib.drive({ version: 'v3', auth });
 
 async function verify() {
+    console.log('Fetching files...');
+    const response = await driveInstance.files.list({
+        pageSize: 10,
+        fields: 'nextPageToken, files(id, name)',
+    });
+    const files = response.data.files;
+    if (files.length === 0) {
+        console.log('No files found.');
+    } else {
+        console.log('Files:');
+        files.map((file) => {
+            console.log(`${file.name} (${file.id})`);
+        });
+    }
+
     console.log('Verifying folder accessibility...');
     console.log('Target ID:', DRIVE_FOLDER_ID);
     console.log('Service Account:', CLIENT_EMAIL);
 
     try {
-        const res = await drive.files.get({
+        const res = await driveInstance.files.get({
             fileId: DRIVE_FOLDER_ID,
             fields: 'id, name, permissions'
         });

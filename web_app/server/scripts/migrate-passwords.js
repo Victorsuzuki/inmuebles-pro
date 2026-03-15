@@ -4,7 +4,7 @@
  *   node scripts/migrate-passwords.js
  */
 require('dotenv').config();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { getRows, getSheet } = require('../services/sheetService');
 
 const SALT_ROUNDS = 10;
