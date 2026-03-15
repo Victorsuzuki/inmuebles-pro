@@ -76,14 +76,11 @@ async function getRows(sheetTitle) {
 async function initializeSheets() {
     if (doc) return; // Already initialized in this instance
     try {
-        const doc = await getDoc();
+        // Assign to the module-level 'doc' variable, don't redeclare with const
+        doc = await getDoc();
         console.log('Google Sheets connection verified.');
-        // We only verify/create sheets once in development or migration.
-        // For production Lambda, we assume sheets exist to speed up cold starts.
-        // If they don't exist, the first operation will fail and we can handle it then.
         if (process.env.NODE_ENV === 'development') {
              console.log('Dev mode: Checking schemas...');
-             // (Logic for checking schemas could go here, but let's keep it simple for now)
         }
         console.log('Google Sheets check completed.');
     } catch (error) {

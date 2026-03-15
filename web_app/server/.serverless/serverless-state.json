@@ -188,7 +188,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/inmuebles-pro-api/dev/1773572932313-2026-03-15T11:08:52.313Z/inmuebles-pro-api.zip"
+                "S3Key": "serverless/inmuebles-pro-api/dev/1773573051372-2026-03-15T11:10:51.372Z/inmuebles-pro-api.zip"
               },
               "Handler": "lambda.handler",
               "Runtime": "nodejs20.x",
@@ -217,14 +217,14 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersionk6kg5GM2P2MhHeTMty8jbbmagG1q3QmVPXd1SAoddDc": {
+          "ApiLambdaVersiongMk1ZQWORul4rbe72gwAdCUvDJXQIQdsbJWomNKSk": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "CYKkZyXbrzleFZDELLe3FBjnPJpuUpT2hkvmOIstEGA="
+              "CodeSha256": "y+UoItMqJx0xIsohgKJNoyoXRYFbkHBKu6z3ruKgkHQ="
             }
           },
           "HttpApi": {
@@ -355,7 +355,7 @@
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersionk6kg5GM2P2MhHeTMty8jbbmagG1q3QmVPXd1SAoddDc"
+              "Ref": "ApiLambdaVersiongMk1ZQWORul4rbe72gwAdCUvDJXQIQdsbJWomNKSk"
             },
             "Export": {
               "Name": "sls-inmuebles-pro-api-dev-ApiLambdaFunctionQualifiedArn"
@@ -497,7 +497,7 @@
         "timeout": 29,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersionk6kg5GM2P2MhHeTMty8jbbmagG1q3QmVPXd1SAoddDc"
+        "versionLogicalId": "ApiLambdaVersiongMk1ZQWORul4rbe72gwAdCUvDJXQIQdsbJWomNKSk"
       }
     },
     "configValidationMode": "warn",
@@ -522,7 +522,7 @@
         ],
         "artifactsS3KeyDirname": "serverless/inmuebles-pro-api/dev/code-artifacts",
         "artifact": "D:\\Escritorio\\TMP\\desarrollos\\Inmuebles_pro\\web_app\\server\\.serverless\\inmuebles-pro-api.zip",
-        "artifactDirectoryName": "serverless/inmuebles-pro-api/dev/1773572932313-2026-03-15T11:08:52.313Z"
+        "artifactDirectoryName": "serverless/inmuebles-pro-api/dev/1773573051372-2026-03-15T11:10:51.372Z"
       },
       "functions": {
         "$ref": "$[\"service\"][\"functions\"]"
@@ -533,7 +533,7 @@
     "artifact": "D:\\Escritorio\\TMP\\desarrollos\\Inmuebles_pro\\web_app\\server\\.serverless\\inmuebles-pro-api.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/inmuebles-pro-api/dev/1773572932313-2026-03-15T11:08:52.313Z",
+    "artifactDirectoryName": "serverless/inmuebles-pro-api/dev/1773573051372-2026-03-15T11:10:51.372Z",
     "artifact": "inmuebles-pro-api.zip"
   }
 }
