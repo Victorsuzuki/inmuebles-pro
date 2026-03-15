@@ -1,7 +1,17 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+    const rawURL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    // Remove trailing slashes and normalize /api suffix
+    let normalized = rawURL.replace(/\/+$/, '');
+    if (!normalized.endsWith('/api')) {
+        normalized += '/api';
+    }
+    return normalized;
+};
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:8080/api',
+    baseURL: getBaseURL(),
 });
 
 // Adjuntar token de autenticación a cada request
