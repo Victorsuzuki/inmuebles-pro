@@ -1,1 +1,11 @@
-node_modules/\n.env*\n.idea/\n.vscode/\ndist/\nbuild/\n*.log
+node_modules/
+.env*
+.idea/
+.vscode/
+dist/
+build/
+*.log
+.serverless/
+bin/
+obj/
+.streamlit/
