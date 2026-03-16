@@ -1,33 +1,73 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
+// Helper to sanitize env variables (removes quotes, commas, trailing spaces, and extracts ID from URLs)
+const sanitize = (val) => {
+    if (!val) return null;
+    let clean = val.replace(/^[",'\s]+|[",'\s]+$/g, '').trim();
+    // If it looks like a URL, extract the ID
+    if (clean.includes('/d/')) {
+        const matches = clean.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (matches && matches[1]) return matches[1];
+    }
+    // Remove anything after the first slash if not a full URL but has trailing parts
+    return clean.split('/')[0];
+};
+
 // Config variables
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+const SPREADSHEET_ID = sanitize(process.env.SPREADSHEET_ID);
+const CLIENT_EMAIL = sanitize(process.env.GOOGLE_CLIENT_EMAIL);
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY 
     ? process.env.GOOGLE_PRIVATE_KEY
-        .replace(/^"(.*)"$/, '$1') // Remove surrounding quotes if any
-        .replace(/\\n/g, '\n')     // Replace escaped newlines
+        .replace(/\\n/g, '\n')          // Replace escaped \n
+        .replace(/^[",'\s]+|[",'\s]+$/g, '') // Remove surrounding quotes/commas
+        .trim()
     : null;
 
-let doc;
+let doc = null;
+let loadPromise = null;
 
 async function getDoc() {
-    if (doc) return doc;
+    // If doc is already fully loaded, return it
+    if (doc && doc.title) return doc;
+
+    // If a load is already in progress, wait for it
+    if (loadPromise) return loadPromise;
 
     if (!SPREADSHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
         throw new Error('Missing Google Sheets credentials in environment variables.');
     }
 
-    const serviceAccountAuth = new JWT({
-        email: CLIENT_EMAIL,
-        key: PRIVATE_KEY,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
+    loadPromise = (async () => {
+        try {
+            const serviceAccountAuth = new JWT({
+                email: CLIENT_EMAIL,
+                key: PRIVATE_KEY,
+                scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+            });
 
-    doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
-    await doc.loadInfo();
-    return doc;
+            const newDoc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+            
+            console.log(`[getDoc] Calling loadInfo for ID: ${SPREADSHEET_ID.substring(0, 10)}...`);
+            
+            await Promise.race([
+                newDoc.loadInfo(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Google Sheets loadInfo timeout (25s)')), 25000)
+                )
+            ]);
+
+            doc = newDoc;
+            return doc;
+        } catch (error) {
+            loadPromise = null; // Clear promise so we can retry on next call
+            throw error;
+        } finally {
+            loadPromise = null;
+        }
+    })();
+
+    return loadPromise;
 }
 
 // Helper to get a specific sheet by title
@@ -74,14 +114,9 @@ async function getRows(sheetTitle) {
  * Initialize sheets (create headers if missing)
  */
 async function initializeSheets() {
-    if (doc) return; // Already initialized in this instance
     try {
-        // Assign to the module-level 'doc' variable, don't redeclare with const
-        doc = await getDoc();
+        await getDoc();
         console.log('Google Sheets connection verified.');
-        if (process.env.NODE_ENV === 'development') {
-             console.log('Dev mode: Checking schemas...');
-        }
         console.log('Google Sheets check completed.');
     } catch (error) {
         console.error('Critical error in initializeSheets:', error.message);

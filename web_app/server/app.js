@@ -14,6 +14,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Logger for debugging 404s/500s
+app.use((req, res, next) => {
+    console.log(`[REQ] ${req.method} ${req.url}`);
+    next();
+});
+
 // Initialize Sheets asynchronously, but don't block defining routes
 let isReady = false;
 let initError = null;
@@ -30,10 +36,25 @@ let initPromise = initializeSheets().then(() => {
 });
 
 // Health check (BEFORE middleware to avoid blocking debug)
-app.get('/api/health-check', (req, res) => {
+app.get('/api/health-check', async (req, res) => {
+    if (!isReady) {
+        try {
+            await initializeSheets();
+            isReady = true;
+        } catch (e) {
+            return res.status(500).json({ 
+                status: 'error', 
+                sheets: false, 
+                error: e.message,
+                timestamp: new Date().toISOString() 
+            });
+        }
+    }
+
     res.json({
-        status: isReady ? 'ready' : (initError ? 'error' : 'initializing'),
-        sheets: isReady,
+        status: 'ready',
+        sheets: true,
+        v: 7,
         timestamp: new Date().toISOString()
     });
 });

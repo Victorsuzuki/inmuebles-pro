@@ -71,19 +71,45 @@ const Properties = () => {
     };
 
     const handleEdit = (prop) => {
+        const cleanNum = (val) => {
+            if (val === undefined || val === null || val === '') return '';
+            let clean = String(val).replace(/[^0-9.,-]/g, '');
+            return clean.replace(/[.,]/g, '');
+        };
+
+        const cleanBool = (val) => {
+            if (!val) return 'false';
+            const s = String(val).toLowerCase().trim();
+            return (s === 'true' || s === 'verdadero' || s === 'yes' || s === 'si' || s === '1') ? 'true' : 'false';
+        };
+
         setFormData({
-            address: prop.address || '', city: prop.city || '', zip: prop.zip || '',
-            type: prop.type || 'Apartamento', price: prop.price || '', owner: prop.owner || '',
-            description: prop.description || '', cleaningService: prop.cleaningService || 'Ninguno',
-            bedrooms: prop.bedrooms || '', bathrooms: prop.bathrooms || '', sqMeters: prop.sqMeters || '',
-            floor: prop.floor || '', hasElevator: prop.hasElevator || 'false',
-            hasParking: prop.hasParking || 'false', hasPool: prop.hasPool || 'false',
-            hasTerrace: prop.hasTerrace || 'false', hasAC: prop.hasAC || 'false',
-            hasHeating: prop.hasHeating || 'false', heatingType: prop.heatingType || '',
-            furnished: prop.furnished || 'No amueblado', orientation: prop.orientation || '',
-            yearBuilt: prop.yearBuilt || '', energyCert: prop.energyCert || '',
-            rentalPrice: prop.rentalPrice || '', depositMonths: prop.depositMonths || '2',
-            communityFees: prop.communityFees || ''
+            address: prop.address || '', 
+            city: prop.city || '', 
+            zip: prop.zip || '',
+            type: prop.type || 'Apartamento', 
+            price: cleanNum(prop.price), 
+            owner: prop.owner || '',
+            description: prop.description || '', 
+            cleaningService: prop.cleaningService || 'Ninguno',
+            bedrooms: cleanNum(prop.bedrooms), 
+            bathrooms: cleanNum(prop.bathrooms), 
+            sqMeters: cleanNum(prop.sqMeters),
+            floor: prop.floor || '', 
+            hasElevator: cleanBool(prop.hasElevator),
+            hasParking: cleanBool(prop.hasParking), 
+            hasPool: cleanBool(prop.hasPool),
+            hasTerrace: cleanBool(prop.hasTerrace), 
+            hasAC: cleanBool(prop.hasAC),
+            hasHeating: cleanBool(prop.hasHeating), 
+            heatingType: prop.heatingType || '',
+            furnished: prop.furnished || 'No amueblado', 
+            orientation: prop.orientation || '',
+            yearBuilt: cleanNum(prop.yearBuilt), 
+            energyCert: prop.energyCert || '',
+            rentalPrice: cleanNum(prop.rentalPrice), 
+            depositMonths: cleanNum(prop.depositMonths),
+            communityFees: cleanNum(prop.communityFees)
         });
         setSelectedId(prop.id);
         setError(null);
