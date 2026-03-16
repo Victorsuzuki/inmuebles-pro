@@ -11,7 +11,8 @@ const Events = () => {
         endDate: '',
         description: '',
         status: 'Pendiente',
-        clientId: ''
+        clientId: '',
+        priceType: 'Normal'
     });
 
     const [selectedId, setSelectedId] = useState(null);
@@ -95,7 +96,7 @@ const Events = () => {
             } else {
                 await api.post('/events', dataToSend);
             }
-            setFormData({ propertyId: '', type: 'Alquiler', startDate: '', endDate: '', description: '', status: 'Pendiente', clientId: '' });
+            setFormData({ propertyId: '', type: 'Alquiler', startDate: '', endDate: '', description: '', status: 'Pendiente', clientId: '', priceType: 'Normal' });
             setSelectedId(null);
             fetchEvents();
         } catch (error) {
@@ -118,7 +119,8 @@ const Events = () => {
             endDate: event.endDate,
             description: event.description,
             status: event.status || 'Pendiente',
-            clientId: event.clientId || ''
+            clientId: event.clientId || '',
+            priceType: event.priceType || 'Normal'
         });
         setSelectedId(event.id);
         setError(null);
@@ -126,7 +128,7 @@ const Events = () => {
     };
 
     const handleCancel = () => {
-        setFormData({ propertyId: '', type: 'Alquiler', startDate: '', endDate: '', description: '', status: 'Pendiente', clientId: '' });
+        setFormData({ propertyId: '', type: 'Alquiler', startDate: '', endDate: '', description: '', status: 'Pendiente', clientId: '', priceType: 'Normal' });
         setSelectedId(null);
         setError(null);
     };
@@ -191,8 +193,13 @@ const Events = () => {
                                                 </div>
                                                 <div>
                                                     <div className="text-sm font-semibold text-slate-900">{ev.type}</div>
-                                                    <div className="text-xs text-slate-500">
+                                                    <div className="text-xs text-slate-500 flex items-center gap-2">
                                                         {properties.find(p => p.id === ev.propertyId)?.address || ev.propertyId}
+                                                        {ev.type === 'Alquiler' && ev.priceType && (
+                                                            <span className={`px-1 rounded-[4px] text-[9px] font-bold uppercase ${ev.priceType === 'Temporada' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                {ev.priceType}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -283,6 +290,22 @@ const Events = () => {
                                 <option value="Visita">Visita</option>
                             </select>
                         </div>
+
+                        {formData.type === 'Alquiler' && (
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Tipo de Precio</label>
+                                <div className="flex space-x-4 mt-2">
+                                    <label className="flex items-center text-sm text-slate-700">
+                                        <input type="radio" name="priceType" value="Normal" checked={formData.priceType === 'Normal'} onChange={handleInputChange} className="mr-2 text-emerald-600 focus:ring-emerald-500" />
+                                        Normal
+                                    </label>
+                                    <label className="flex items-center text-sm text-slate-700">
+                                        <input type="radio" name="priceType" value="Temporada" checked={formData.priceType === 'Temporada'} onChange={handleInputChange} className="mr-2 text-emerald-600 focus:ring-emerald-500" />
+                                        Temporada
+                                    </label>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Dates: 1 field for Visita, 2 for others */}
                         {isVisita ? (

@@ -259,8 +259,14 @@ const Dashboard = () => {
                                 )}
                                 {tooltip.data._property.price && (
                                     <div className="flex justify-between gap-3">
-                                        <span className="text-slate-400">Precio</span>
+                                        <span className="text-slate-400">Precio Normal</span>
                                         <span className="font-medium text-emerald-400">{Number(tooltip.data._property.price).toLocaleString('es-ES')} €</span>
+                                    </div>
+                                )}
+                                {tooltip.data._property.seasonPrice && (
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-400">Precio Temporada</span>
+                                        <span className="font-medium text-amber-400">{Number(tooltip.data._property.seasonPrice).toLocaleString('es-ES')} €</span>
                                     </div>
                                 )}
                                 {tooltip.data._property.type && (
@@ -273,6 +279,14 @@ const Dashboard = () => {
                                     <div className="flex justify-between gap-3">
                                         <span className="text-slate-400">Cliente</span>
                                         <span className="font-medium">{tooltip.data._client.name}</span>
+                                    </div>
+                                )}
+                                {tooltip.data._event.priceType && tooltip.data._event.type === 'Alquiler' && (
+                                    <div className="flex justify-between gap-3 mt-1 pt-1 border-t border-slate-700/50">
+                                        <span className="text-slate-400 font-bold">Tipo Alquiler</span>
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${tooltip.data._event.priceType === 'Temporada' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                            {tooltip.data._event.priceType}
+                                        </span>
                                     </div>
                                 )}
                             </div>

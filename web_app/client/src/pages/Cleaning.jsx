@@ -7,7 +7,10 @@ const Cleaning = () => {
     // --- Personal de Limpieza state ---
     const [cleaners, setCleaners] = useState([]);
     const [users, setUsers] = useState([]);
-    const [cleanerForm, setCleanerForm] = useState({ name: '', phone: '', email: '', status: 'Activo', notes: '', userId: '' });
+    const [cleanerForm, setCleanerForm] = useState({
+        name: '', phone: '', email: '', status: 'Activo', notes: '', userId: '',
+        nationality: '', passport: '', address: ''
+    });
     const [selectedCleanerId, setSelectedCleanerId] = useState(null);
 
     // --- Programación state ---
@@ -93,7 +96,7 @@ const Cleaning = () => {
                 }
                 await api.post('/cleaners', payload);
             }
-            setCleanerForm({ name: '', phone: '', email: '', status: 'Activo', notes: '', userId: '' });
+            setCleanerForm({ name: '', phone: '', email: '', status: 'Activo', notes: '', userId: '', nationality: '', passport: '', address: '' });
             setSelectedCleanerId(null);
             fetchCleaners();
             setSuccess('Personal guardado correctamente');
@@ -105,13 +108,22 @@ const Cleaning = () => {
     };
 
     const handleCleanerEdit = (c) => {
-        setCleanerForm({ name: c.name, phone: c.phone || '', email: c.email || '', status: c.status || 'Activo', notes: c.notes || '' });
+        setCleanerForm({
+            name: c.name,
+            phone: c.phone || '',
+            email: c.email || '',
+            status: c.status || 'Activo',
+            notes: c.notes || '',
+            nationality: c.nationality || '',
+            passport: c.passport || '',
+            address: c.address || ''
+        });
         setSelectedCleanerId(c.id);
         setError(null);
     };
 
     const handleCleanerCancel = () => {
-        setCleanerForm({ name: '', phone: '', email: '', status: 'Activo', notes: '', userId: '' });
+        setCleanerForm({ name: '', phone: '', email: '', status: 'Activo', notes: '', userId: '', nationality: '', passport: '', address: '' });
         setSelectedCleanerId(null);
         setError(null);
     };
@@ -319,6 +331,7 @@ const Cleaning = () => {
                                 <thead className="bg-slate-50">
                                     <tr>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Pasaporte / Nac.</th>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Contacto</th>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</th>
                                         <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
@@ -344,6 +357,10 @@ const Cleaning = () => {
                                                         {c.notes && <div className="text-xs text-slate-400">{c.notes}</div>}
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm text-slate-700">{c.passport || '—'}</div>
+                                                <div className="text-xs text-slate-500">{c.nationality || '—'}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-sm text-slate-600">{c.phone || '—'}</div>
@@ -416,16 +433,30 @@ const Cleaning = () => {
                                     <input name="phone" value={cleanerForm.phone} onChange={handleCleanerInput} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" placeholder="600123456" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>
-                                    <input name="email" type="email" value={cleanerForm.email} onChange={handleCleanerInput} className="w-full border-slate-200 rounded-lg bg-slate-50 text-slate-500" placeholder="email@ejemplo.com" readOnly />
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Pasaporte</label>
+                                    <input name="passport" value={cleanerForm.passport} onChange={handleCleanerInput} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Nacionalidad</label>
+                                    <input name="nationality" value={cleanerForm.nationality} onChange={handleCleanerInput} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Estado</label>
+                                    <select name="status" value={cleanerForm.status} onChange={handleCleanerInput} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500">
+                                        <option value="Activo">Activo</option>
+                                        <option value="Inactivo">Inactivo</option>
+                                    </select>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Estado</label>
-                                <select name="status" value={cleanerForm.status} onChange={handleCleanerInput} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500">
-                                    <option value="Activo">Activo</option>
-                                    <option value="Inactivo">Inactivo</option>
-                                </select>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Domicilio</label>
+                                <input name="address" value={cleanerForm.address} onChange={handleCleanerInput} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" placeholder="Dirección completa..." />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>
+                                <input name="email" type="email" value={cleanerForm.email} onChange={handleCleanerInput} className="w-full border-slate-200 rounded-lg bg-slate-50 text-slate-500" placeholder="email@ejemplo.com" readOnly />
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Notas</label>

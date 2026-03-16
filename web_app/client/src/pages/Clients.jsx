@@ -9,7 +9,10 @@ const Clients = () => {
         phone: '',
         dni: '',
         status: 'Activo',
-        notes: ''
+        notes: '',
+        nationality: '',
+        passport: '',
+        address: ''
     });
     const [selectedId, setSelectedId] = useState(null);
 
@@ -36,7 +39,7 @@ const Clients = () => {
             } else {
                 await api.post('/clients', formData);
             }
-            setFormData({ name: '', email: '', phone: '', dni: '', status: 'Activo', notes: '' });
+            setFormData({ name: '', email: '', phone: '', dni: '', status: 'Activo', notes: '', nationality: '', passport: '', address: '' });
             setSelectedId(null);
             fetchClients();
         } catch (error) { console.error('Error saving client', error); }
@@ -49,13 +52,16 @@ const Clients = () => {
             phone: client.phone,
             dni: client.dni,
             status: client.status,
-            notes: client.notes
+            notes: client.notes,
+            nationality: client.nationality || '',
+            passport: client.passport || '',
+            address: client.address || ''
         });
         setSelectedId(client.id);
     };
 
     const handleCancel = () => {
-        setFormData({ name: '', email: '', phone: '', dni: '', status: 'Activo', notes: '' });
+        setFormData({ name: '', email: '', phone: '', dni: '', status: 'Activo', notes: '', nationality: '', passport: '', address: '' });
         setSelectedId(null);
     };
 
@@ -82,6 +88,7 @@ const Clients = () => {
                             <thead className="bg-slate-50">
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">Nombre / DNI</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">Pasaporte / Nac.</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">Contacto</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
                                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
@@ -100,6 +107,10 @@ const Clients = () => {
                                         <td className="px-6 py-4">
                                             <div className="text-sm font-medium text-slate-900">{client.name}</div>
                                             <div className="text-xs text-slate-500">{client.dni}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-slate-700">{client.passport || '—'}</div>
+                                            <div className="text-xs text-slate-500">{client.nationality || '—'}</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-sm text-slate-600">{client.email}</div>
@@ -143,9 +154,23 @@ const Clients = () => {
                                 <input name="dni" value={formData.dni} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
                             </div>
                             <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Pasaporte</label>
+                                <input name="passport" value={formData.passport} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Nacionalidad</label>
+                                <input name="nationality" value={formData.nationality} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                            </div>
+                            <div>
                                 <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Teléfono</label>
                                 <input name="phone" value={formData.phone} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
                             </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Domicilio</label>
+                            <input name="address" value={formData.address} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Dirección completa..." />
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>

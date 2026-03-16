@@ -7,7 +7,10 @@ const Users = () => {
         name: '',
         email: '',
         password: '',
-        role: 'OPERATOR'
+        role: 'OPERATOR',
+        nationality: '',
+        passport: '',
+        address: ''
     });
     const [selectedId, setSelectedId] = useState(null);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
@@ -47,7 +50,7 @@ const Users = () => {
                 await api.post('/users', formData);
                 setFeedback({ type: 'success', message: 'Usuario creado correctamente' });
             }
-            setFormData({ name: '', email: '', password: '', role: 'OPERATOR' });
+            setFormData({ name: '', email: '', password: '', role: 'OPERATOR', nationality: '', passport: '', address: '' });
             setSelectedId(null);
             fetchUsers();
         } catch (error) {
@@ -62,14 +65,17 @@ const Users = () => {
             name: user.name,
             email: user.email,
             password: '', // Don't populate password
-            role: user.role
+            role: user.role,
+            nationality: user.nationality || '',
+            passport: user.passport || '',
+            address: user.address || ''
         });
         setSelectedId(user.id);
         setFeedback({ type: '', message: '' });
     };
 
     const handleCancel = () => {
-        setFormData({ name: '', email: '', password: '', role: 'OPERATOR' });
+        setFormData({ name: '', email: '', password: '', role: 'OPERATOR', nationality: '', passport: '', address: '' });
         setSelectedId(null);
         setFeedback({ type: '', message: '' });
     };
@@ -178,6 +184,26 @@ const Users = () => {
                                 </optgroup>
                             </select>
                         </div>
+
+                        {(formData.role === 'LIMPIADOR' || formData.role === 'CLIENTE') && (
+                            <div className="space-y-4 pt-2 border-t border-slate-100">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Información de Perfil</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Pasaporte / ID</label>
+                                        <input name="passport" value={formData.passport} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Nacionalidad</label>
+                                        <input name="nationality" value={formData.nationality} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Domicilio</label>
+                                    <input name="address" value={formData.address} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm" placeholder="Dirección completa..." />
+                                </div>
+                            </div>
+                        )}
                         <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl mt-2 uppercase tracking-widest text-sm">
                             {selectedId ? 'Actualizar' : 'Crear Usuario'}
                         </button>

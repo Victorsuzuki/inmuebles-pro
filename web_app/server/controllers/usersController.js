@@ -82,17 +82,19 @@ const updateUser = async (req, res) => {
 
         const updated = await updateRow('Users', id, updateData);
         if (updated) {
-            // SYNC: Update name/email in entity if they changed
+            // SYNC: Update name/email and extra info in entity if they changed
+            const entityData = {
+                name: updated.name,
+                email: updated.email,
+                nationality: updated.nationality || '',
+                passport: updated.passport || '',
+                address: updated.address || ''
+            };
+
             if (updated.role === 'LIMPIADOR') {
-                await updateRow('Cleaners', id, {
-                    name: updated.name,
-                    email: updated.email
-                }).catch(() => null); // Silently fail if cleaner record doesn't exist
+                await updateRow('Cleaners', id, entityData).catch(() => null);
             } else if (updated.role === 'CLIENTE') {
-                await updateRow('Clients', id, {
-                    name: updated.name,
-                    email: updated.email
-                }).catch(() => null);
+                await updateRow('Clients', id, entityData).catch(() => null);
             }
 
             const { password, ...safeUser } = updated;
