@@ -419,19 +419,8 @@ const Properties = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Precio €</label>
-                                            <input name="price" type="number" value={formData.price} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-emerald-600 uppercase mb-1 flex items-center gap-1">
-                                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                                                Temporada €
-                                            </label>
-                                            <input name="seasonPrice" type="number" min="0" value={formData.seasonPrice} onChange={handleInputChange} className="w-full border-emerald-200 bg-emerald-50/30 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 font-bold text-emerald-700 placeholder-emerald-300" placeholder="0" />
-                                        </div>
-                                    </div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Precio €</label>
+                                    <input name="price" type="number" value={formData.price} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required />
                                 </div>
                             </div>
                             <div>
@@ -528,10 +517,14 @@ const Properties = () => {
 
                         {/* === FINANCIAL === */}
                         {formSection === 'financial' && (<>
-                            <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Alquiler mensual (Referencia) €</label>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Alquiler mensual €</label>
                                     <input name="rentalPrice" type="number" min="0" value={formData.rentalPrice} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Precio Temporada €</label>
+                                    <input name="seasonPrice" type="number" min="0" value={formData.seasonPrice} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
