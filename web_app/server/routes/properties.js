@@ -43,4 +43,7 @@ router.post('/:id/dossier', upload.single('dossier'), propertiesController.uploa
 router.get('/:id/dossier-upload-url', propertiesController.getDossierUploadUrl);
 router.post('/:id/dossier-confirm', propertiesController.confirmDossierUpload);
 
+// Chunked upload flow (each chunk is base64 JSON < 10 MB; no CORS config needed)
+router.post('/:id/dossier-chunk', propertiesController.uploadDossierChunk);
+
 module.exports = router;

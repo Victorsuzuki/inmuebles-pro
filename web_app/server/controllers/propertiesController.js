@@ -328,6 +328,66 @@ const confirmDossierUpload = async (req, res) => {
     }
 };
 
+// ----- Chunked dossier upload (bypasses API Gateway 10 MB limit) -----
+// In-memory store for chunks. Lambda is stateless so we use a simple Map;
+// chunks of a single upload must hit the same Lambda instance.
+// Each entry: { total, received: Map<index, Buffer> }
+const chunkStore = new Map();
+
+const uploadDossierChunk = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { chunkIndex, totalChunks, chunkData } = req.body;
+
+        if (chunkData === undefined || chunkIndex === undefined || totalChunks === undefined) {
+            return res.status(400).json({ message: 'Missing chunkIndex, totalChunks or chunkData' });
+        }
+
+        const key = id;
+        if (!chunkStore.has(key)) {
+            chunkStore.set(key, { total: Number(totalChunks), chunks: new Map() });
+        }
+        const entry = chunkStore.get(key);
+        entry.chunks.set(Number(chunkIndex), Buffer.from(chunkData, 'base64'));
+
+        // All chunks received?
+        if (entry.chunks.size < entry.total) {
+            return res.json({ received: entry.chunks.size, total: entry.total, done: false });
+        }
+
+        // Assemble
+        const ordered = [];
+        for (let i = 0; i < entry.total; i++) ordered.push(entry.chunks.get(i));
+        const fullBuffer = Buffer.concat(ordered);
+        chunkStore.delete(key);
+
+        // Delete old dossier
+        const properties = await getRows('Properties');
+        const prop = properties.find(p => p.id === id);
+        if (prop?.dossierFileId) {
+            await deleteFirebaseFile(prop.dossierFileId);
+        }
+
+        // Upload assembled buffer to Firebase
+        const result = await uploadToFirebase(
+            fullBuffer,
+            `dossier_${id}_${Date.now()}.pdf`,
+            'application/pdf',
+            `properties/${id}`
+        );
+
+        await updateRow('Properties', id, {
+            dossierUrl: result.webViewLink,
+            dossierFileId: result.fileId
+        });
+
+        res.json({ done: true, dossierUrl: result.webViewLink });
+    } catch (error) {
+        console.error('uploadDossierChunk error:', error);
+        res.status(500).json({ message: 'Error processing dossier chunk' });
+    }
+};
+
 function getExtension(filename) {
     const ext = filename.lastIndexOf('.');
     return ext >= 0 ? filename.substring(ext) : '';
@@ -337,5 +397,5 @@ module.exports = {
     getProperties, getAllProperties, createProperty, updateProperty, deleteProperty,
     archiveProperty, unarchiveProperty, deletePropertyCascade,
     uploadPhotos, getPhotos, deletePhoto, uploadDossier,
-    getDossierUploadUrl, confirmDossierUpload
+    getDossierUploadUrl, confirmDossierUpload, uploadDossierChunk
 };

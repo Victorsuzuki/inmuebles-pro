@@ -192,18 +192,26 @@ const Properties = () => {
         if (!file || !selectedId) return;
         setUploading(true);
         try {
-            // Step 1: Ask backend for a signed Firebase upload URL (bypasses API Gateway 10 MB limit)
-            const { data: { signedUrl, publicUrl, fileId } } = await api.get(`/properties/${selectedId}/dossier-upload-url`);
+            const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB per chunk (safe under 10 MB API Gateway limit)
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8 = new Uint8Array(arrayBuffer);
+            const totalChunks = Math.ceil(uint8.length / CHUNK_SIZE);
 
-            // Step 2: Upload the PDF directly to Firebase Storage (no API Gateway involved)
-            await fetch(signedUrl, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/pdf' },
-                body: file,
-            });
+            for (let i = 0; i < totalChunks; i++) {
+                const slice = uint8.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+                // Convert slice to base64
+                let binary = '';
+                slice.forEach(b => binary += String.fromCharCode(b));
+                const chunkData = btoa(binary);
 
-            // Step 3: Notify backend to save the URL in Google Sheets
-            await api.post(`/properties/${selectedId}/dossier-confirm`, { publicUrl, fileId });
+                const res = await api.post(`/properties/${selectedId}/dossier-chunk`, {
+                    chunkIndex: i,
+                    totalChunks,
+                    chunkData,
+                });
+
+                if (res.data.done) break; // last chunk — backend assembled and uploaded
+            }
 
             setSuccess('Dossier subido correctamente');
             setTimeout(() => setSuccess(null), 3000);
