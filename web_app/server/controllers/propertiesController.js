@@ -337,9 +337,17 @@ const chunkStore = new Map();
 const uploadDossierChunk = async (req, res) => {
     try {
         const { id } = req.params;
-        const { chunkIndex, totalChunks, chunkData } = req.body;
+        // Defensive: API Gateway may pass body as a raw string via serverless-http
+        let body = req.body;
+        if (typeof body === 'string') {
+            try { body = JSON.parse(body); } catch (_) { /* keep as string */ }
+        }
+        const { chunkIndex, totalChunks, chunkData } = body || {};
+
+        console.log(`[CHUNK] prop=${id} idx=${chunkIndex} total=${totalChunks} dataLen=${chunkData?.length}`);
 
         if (chunkData === undefined || chunkIndex === undefined || totalChunks === undefined) {
+            console.error('[CHUNK] Missing fields. body type:', typeof req.body, 'keys:', Object.keys(body || {}));
             return res.status(400).json({ message: 'Missing chunkIndex, totalChunks or chunkData' });
         }
 
@@ -350,16 +358,20 @@ const uploadDossierChunk = async (req, res) => {
         const entry = chunkStore.get(key);
         entry.chunks.set(Number(chunkIndex), Buffer.from(chunkData, 'base64'));
 
+        console.log(`[CHUNK] stored idx=${chunkIndex} entry size=${entry.chunks.size}/${entry.total}`);
+
         // All chunks received?
         if (entry.chunks.size < entry.total) {
             return res.json({ received: entry.chunks.size, total: entry.total, done: false });
         }
 
         // Assemble
+        console.log('[CHUNK] assembling buffer...');
         const ordered = [];
         for (let i = 0; i < entry.total; i++) ordered.push(entry.chunks.get(i));
         const fullBuffer = Buffer.concat(ordered);
         chunkStore.delete(key);
+        console.log(`[CHUNK] assembled ${fullBuffer.length} bytes, uploading to Firebase...`);
 
         // Delete old dossier
         const properties = await getRows('Properties');
@@ -375,6 +387,7 @@ const uploadDossierChunk = async (req, res) => {
             'application/pdf',
             `properties/${id}`
         );
+        console.log('[CHUNK] Firebase upload done:', result.webViewLink);
 
         await updateRow('Properties', id, {
             dossierUrl: result.webViewLink,
@@ -383,8 +396,8 @@ const uploadDossierChunk = async (req, res) => {
 
         res.json({ done: true, dossierUrl: result.webViewLink });
     } catch (error) {
-        console.error('uploadDossierChunk error:', error);
-        res.status(500).json({ message: 'Error processing dossier chunk' });
+        console.error('uploadDossierChunk error:', error.message, error.stack);
+        res.status(500).json({ message: 'Error processing dossier chunk', detail: error.message });
     }
 };
 
