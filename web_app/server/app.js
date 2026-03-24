@@ -12,7 +12,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '9mb' })); // Large limit for chunked dossier uploads (base64 chunks)
 
 // Logger for debugging 404s/500s
 app.use((req, res, next) => {
