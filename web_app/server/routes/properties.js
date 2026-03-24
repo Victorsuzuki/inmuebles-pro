@@ -46,4 +46,7 @@ router.post('/:id/dossier-confirm', propertiesController.confirmDossierUpload);
 // Chunked upload flow (each chunk is base64 JSON < 10 MB; no CORS config needed)
 router.post('/:id/dossier-chunk', propertiesController.uploadDossierChunk);
 
+// OAuth token for direct browser→Firebase Storage upload (bypasses all size limits)
+router.get('/:id/dossier-token', propertiesController.getDossierToken);
+
 module.exports = router;

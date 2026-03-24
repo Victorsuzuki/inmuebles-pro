@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { getRows, addRow, updateRow, deleteRow } = require('../services/sheetService');
 const { uploadToFirebase, deleteFirebaseFile, getSignedUploadUrl } = require('../services/firebaseService');
+const { GoogleAuth } = require('google-auth-library');
 
 const getProperties = async (req, res) => {
     try {
@@ -401,6 +402,29 @@ const uploadDossierChunk = async (req, res) => {
     }
 };
 
+// Generate a short-lived Google OAuth2 token for direct browser upload to Firebase Storage.
+// Uses firebasestorage.googleapis.com which has CORS enabled (unlike storage.googleapis.com).
+const getDossierToken = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+        const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+        const BUCKET = process.env.FIREBASE_STORAGE_BUCKET;
+
+        const auth = new GoogleAuth({
+            credentials: { client_email: CLIENT_EMAIL, private_key: PRIVATE_KEY },
+            scopes: ['https://www.googleapis.com/auth/devstorage.read_write'],
+        });
+        const token = await auth.getAccessToken();
+        const filePath = `properties/${id}/dossier_${id}_${Date.now()}.pdf`;
+
+        res.json({ token, filePath, bucket: BUCKET });
+    } catch (error) {
+        console.error('getDossierToken error:', error.message);
+        res.status(500).json({ message: 'Error generating upload token' });
+    }
+};
+
 function getExtension(filename) {
     const ext = filename.lastIndexOf('.');
     return ext >= 0 ? filename.substring(ext) : '';
@@ -410,5 +434,5 @@ module.exports = {
     getProperties, getAllProperties, createProperty, updateProperty, deleteProperty,
     archiveProperty, unarchiveProperty, deletePropertyCascade,
     uploadPhotos, getPhotos, deletePhoto, uploadDossier,
-    getDossierUploadUrl, confirmDossierUpload, uploadDossierChunk
+    getDossierUploadUrl, confirmDossierUpload, uploadDossierChunk, getDossierToken
 };

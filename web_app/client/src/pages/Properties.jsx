@@ -192,33 +192,34 @@ const Properties = () => {
         if (!file || !selectedId) return;
         setUploading(true);
         try {
-            const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB binary → ~1.37 MB base64, well under Lambda 6 MB limit
-            const arrayBuffer = await file.arrayBuffer();
-            const uint8 = new Uint8Array(arrayBuffer);
-            const totalChunks = Math.ceil(uint8.length / CHUNK_SIZE);
+            // Step 1: Get a short-lived OAuth token + target path from backend
+            const { data: { token, filePath, bucket } } = await api.get(`/properties/${selectedId}/dossier-token`);
 
-            for (let i = 0; i < totalChunks; i++) {
-                const slice = uint8.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-                // Convert slice to base64
-                let binary = '';
-                slice.forEach(b => binary += String.fromCharCode(b));
-                const chunkData = btoa(binary);
-
-                const res = await api.post(`/properties/${selectedId}/dossier-chunk`, {
-                    chunkIndex: i,
-                    totalChunks,
-                    chunkData,
-                });
-
-                if (res.data.done) break; // last chunk — backend assembled and uploaded
+            // Step 2: Upload directly to Firebase Storage REST API (has CORS support, no size limit)
+            const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(filePath)}`;
+            const uploadRes = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/pdf',
+                },
+                body: file,
+            });
+            if (!uploadRes.ok) {
+                const errText = await uploadRes.text();
+                throw new Error(`Firebase upload failed: ${uploadRes.status} ${errText}`);
             }
+
+            // Step 3: Notify backend to save the URL in Google Sheets
+            const publicUrl = `https://storage.googleapis.com/${bucket}/${filePath}`;
+            await api.post(`/properties/${selectedId}/dossier-confirm`, { publicUrl, fileId: filePath });
 
             setSuccess('Dossier subido correctamente');
             setTimeout(() => setSuccess(null), 3000);
             fetchProperties();
         } catch (err) {
-            console.error(err);
-            setError('Error subiendo dossier');
+            console.error('Dossier upload error:', err);
+            setError('Error subiendo dossier: ' + err.message);
         }
         finally { setUploading(false); }
     };
