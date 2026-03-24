@@ -192,7 +192,7 @@ const Properties = () => {
         if (!file || !selectedId) return;
         setUploading(true);
         try {
-            const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB per chunk (safe under 10 MB API Gateway limit)
+            const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB binary → ~1.37 MB base64, well under Lambda 6 MB limit
             const arrayBuffer = await file.arrayBuffer();
             const uint8 = new Uint8Array(arrayBuffer);
             const totalChunks = Math.ceil(uint8.length / CHUNK_SIZE);
