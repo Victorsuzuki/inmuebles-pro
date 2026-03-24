@@ -458,11 +458,17 @@ const deleteDossier = async (req, res) => {
             await smartDeleteFile(prop.dossierFileId);
         }
 
-        await updateRow('Properties', id, {
+        const result = await updateRow('Properties', id, {
             dossierUrl: '',
             dossierFileId: ''
         });
 
+        if (!result) {
+            console.error(`[deleteDossier] updateRow failed for ID: ${id}`);
+            return res.status(404).json({ message: 'Propiedad no encontrada en la hoja' });
+        }
+
+        console.log(`[deleteDossier] Success for ID: ${id}`);
         res.json({ message: 'Dossier eliminado correctamente' });
     } catch (error) {
         console.error('deleteDossier error:', error);

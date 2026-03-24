@@ -136,10 +136,10 @@ async function updateRow(sheetTitle, id, newData) {
 
     const sheet = await getSheet(sheetTitle);
     const rows = await sheet.getRows();
-    const row = rows.find(r => r.get('id') === id);
+    const row = rows.find(r => r.get('id')?.toString().trim().toLowerCase() === id?.toString().trim().toLowerCase());
 
     if (!row) {
-        console.log(`[updateRow] Row not found for ID: ${id}`);
+        console.log(`[updateRow] Row NOT found for ID: ${id} (checked ${rows.length} rows)`);
         return null;
     }
 
@@ -163,7 +163,7 @@ async function updateRow(sheetTitle, id, newData) {
 async function deleteRow(sheetTitle, id) {
     const sheet = await getSheet(sheetTitle);
     const rows = await sheet.getRows();
-    const row = rows.find(r => r.get('id') === id);
+    const row = rows.find(r => r.get('id')?.toString().trim().toLowerCase() === id?.toString().trim().toLowerCase());
     if (row) {
         await row.delete();
         return true;

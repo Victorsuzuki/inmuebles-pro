@@ -575,9 +575,9 @@ const Properties = () => {
                                 <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Dossier PDF</p>
                                 {selectedId ? (
                                     <>
-                                        {properties.find(p => p.id === selectedId)?.dossierUrl && (
+                                        {properties.find(p => String(p.id).trim().toLowerCase() === String(selectedId).trim().toLowerCase())?.dossierUrl && (
                                             <div className="flex items-center gap-3 mb-2">
-                                                <a href={properties.find(p => p.id === selectedId).dossierUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 underline font-medium">
+                                                <a href={properties.find(p => String(p.id).trim().toLowerCase() === String(selectedId).trim().toLowerCase()).dossierUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 underline font-medium">
                                                     📄 Ver dossier actual
                                                 </a>
                                                 <button onClick={handleDeleteDossier} className="text-xs text-red-500 hover:text-red-600 font-medium">
