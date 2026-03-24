@@ -19,6 +19,16 @@ provider:
     GOOGLE_PRIVATE_KEY: ${env:GOOGLE_PRIVATE_KEY}
     GOOGLE_DRIVE_FOLDER_ID: ${env:GOOGLE_DRIVE_FOLDER_ID}
     FIREBASE_STORAGE_BUCKET: ${env:FIREBASE_STORAGE_BUCKET}
+    DOSSIER_BUCKET: inmuebles-pro-dossiers-${self:provider.region}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: 'arn:aws:s3:::inmuebles-pro-dossiers-${self:provider.region}/*'
 
 package:
   patterns:
@@ -36,3 +46,22 @@ functions:
     handler: lambda.handler
     events:
       - httpApi: '*'
+
+resources:
+  Resources:
+    DossierBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: inmuebles-pro-dossiers-${self:provider.region}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - HEAD
+              AllowedHeaders:
+                - '*'
+              MaxAge: 3600

@@ -192,27 +192,21 @@ const Properties = () => {
         if (!file || !selectedId) return;
         setUploading(true);
         try {
-            // Step 1: Get a short-lived OAuth token + target path from backend
-            const { data: { token, filePath, bucket } } = await api.get(`/properties/${selectedId}/dossier-token`);
+            // Step 1: Get a presigned S3 PUT URL from backend (S3 bucket has CORS via CloudFormation)
+            const { data: { presignedUrl, publicUrl, fileId } } = await api.get(`/properties/${selectedId}/dossier-s3-url`);
 
-            // Step 2: Upload directly to Firebase Storage REST API (has CORS support, no size limit)
-            const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(filePath)}`;
-            const uploadRes = await fetch(uploadUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/pdf',
-                },
+            // Step 2: Upload directly to S3 — no API Gateway, no size limit, CORS pre-configured
+            const uploadRes = await fetch(presignedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/pdf' },
                 body: file,
             });
             if (!uploadRes.ok) {
-                const errText = await uploadRes.text();
-                throw new Error(`Firebase upload failed: ${uploadRes.status} ${errText}`);
+                throw new Error(`S3 upload failed: ${uploadRes.status}`);
             }
 
-            // Step 3: Notify backend to save the URL in Google Sheets
-            const publicUrl = `https://storage.googleapis.com/${bucket}/${filePath}`;
-            await api.post(`/properties/${selectedId}/dossier-confirm`, { publicUrl, fileId: filePath });
+            // Step 3: Save the S3 URL in Google Sheets via backend
+            await api.post(`/properties/${selectedId}/dossier-confirm`, { publicUrl, fileId });
 
             setSuccess('Dossier subido correctamente');
             setTimeout(() => setSuccess(null), 3000);

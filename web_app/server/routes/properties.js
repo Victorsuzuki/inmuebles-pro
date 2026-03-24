@@ -49,4 +49,7 @@ router.post('/:id/dossier-chunk', propertiesController.uploadDossierChunk);
 // OAuth token for direct browser→Firebase Storage upload (bypasses all size limits)
 router.get('/:id/dossier-token', propertiesController.getDossierToken);
 
+// S3 presigned URL for direct browser→S3 upload (bucket has CORS configured via CloudFormation)
+router.get('/:id/dossier-s3-url', propertiesController.getDossierS3Url);
+
 module.exports = router;

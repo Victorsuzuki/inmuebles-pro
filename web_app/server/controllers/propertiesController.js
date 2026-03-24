@@ -2,6 +2,11 @@ const { v4: uuidv4 } = require('uuid');
 const { getRows, addRow, updateRow, deleteRow } = require('../services/sheetService');
 const { uploadToFirebase, deleteFirebaseFile, getSignedUploadUrl } = require('../services/firebaseService');
 const { GoogleAuth } = require('google-auth-library');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+
+const s3 = new S3Client({ region: process.env.AWS_REGION || 'eu-north-1' });
+const DOSSIER_BUCKET = process.env.DOSSIER_BUCKET;
 
 const getProperties = async (req, res) => {
     try {
@@ -425,6 +430,25 @@ const getDossierToken = async (req, res) => {
     }
 };
 
+// Generate a presigned S3 PUT URL for direct browser upload (CORS configured on bucket via CloudFormation)
+const getDossierS3Url = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const key = `properties/${id}/dossier_${id}_${Date.now()}.pdf`;
+        const command = new PutObjectCommand({
+            Bucket: DOSSIER_BUCKET,
+            Key: key,
+            ContentType: 'application/pdf',
+        });
+        const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 900 }); // 15 min
+        const publicUrl = `https://${DOSSIER_BUCKET}.s3.eu-north-1.amazonaws.com/${key}`;
+        res.json({ presignedUrl, publicUrl, fileId: key });
+    } catch (error) {
+        console.error('getDossierS3Url error:', error.message);
+        res.status(500).json({ message: 'Error generating S3 upload URL' });
+    }
+};
+
 function getExtension(filename) {
     const ext = filename.lastIndexOf('.');
     return ext >= 0 ? filename.substring(ext) : '';
@@ -434,5 +458,5 @@ module.exports = {
     getProperties, getAllProperties, createProperty, updateProperty, deleteProperty,
     archiveProperty, unarchiveProperty, deletePropertyCascade,
     uploadPhotos, getPhotos, deletePhoto, uploadDossier,
-    getDossierUploadUrl, confirmDossierUpload, uploadDossierChunk, getDossierToken
+    getDossierUploadUrl, confirmDossierUpload, uploadDossierChunk, getDossierToken, getDossierS3Url
 };
