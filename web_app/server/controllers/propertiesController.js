@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { getRows, addRow, updateRow, deleteRow } = require('../services/sheetService');
-const { uploadToFirebase, deleteFirebaseFile } = require('../services/firebaseService');
+const { uploadToFirebase, deleteFirebaseFile, getSignedUploadUrl } = require('../services/firebaseService');
 
 const getProperties = async (req, res) => {
     try {
@@ -286,6 +286,48 @@ const uploadDossier = async (req, res) => {
     }
 };
 
+// Get a signed upload URL so the frontend can upload the PDF directly to Firebase
+// (bypasses API Gateway 10MB limit)
+const getDossierUploadUrl = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const filePath = `properties/${id}/dossier_${id}_${Date.now()}.pdf`;
+        const result = await getSignedUploadUrl(filePath, 'application/pdf', 15);
+        res.json(result); // { signedUrl, publicUrl, fileId }
+    } catch (error) {
+        console.error('getDossierUploadUrl error:', error);
+        res.status(500).json({ message: 'Error generating upload URL' });
+    }
+};
+
+// Called by frontend AFTER direct upload to Firebase to save the URL to Sheets
+const confirmDossierUpload = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { publicUrl, fileId } = req.body;
+        if (!publicUrl || !fileId) {
+            return res.status(400).json({ message: 'publicUrl and fileId are required' });
+        }
+
+        // Delete old dossier if exists
+        const properties = await getRows('Properties');
+        const prop = properties.find(p => p.id === id);
+        if (prop?.dossierFileId) {
+            await deleteFirebaseFile(prop.dossierFileId);
+        }
+
+        await updateRow('Properties', id, {
+            dossierUrl: publicUrl,
+            dossierFileId: fileId
+        });
+
+        res.json({ dossierUrl: publicUrl, dossierFileId: fileId });
+    } catch (error) {
+        console.error('confirmDossierUpload error:', error);
+        res.status(500).json({ message: 'Error saving dossier URL' });
+    }
+};
+
 function getExtension(filename) {
     const ext = filename.lastIndexOf('.');
     return ext >= 0 ? filename.substring(ext) : '';
@@ -294,5 +336,6 @@ function getExtension(filename) {
 module.exports = {
     getProperties, getAllProperties, createProperty, updateProperty, deleteProperty,
     archiveProperty, unarchiveProperty, deletePropertyCascade,
-    uploadPhotos, getPhotos, deletePhoto, uploadDossier
+    uploadPhotos, getPhotos, deletePhoto, uploadDossier,
+    getDossierUploadUrl, confirmDossierUpload
 };

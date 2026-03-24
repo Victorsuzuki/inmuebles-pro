@@ -192,13 +192,26 @@ const Properties = () => {
         if (!file || !selectedId) return;
         setUploading(true);
         try {
-            const fd = new FormData();
-            fd.append('dossier', file);
-            const res = await api.post(`/properties/${selectedId}/dossier`, fd);
+            // Step 1: Ask backend for a signed Firebase upload URL (bypasses API Gateway 10 MB limit)
+            const { data: { signedUrl, publicUrl, fileId } } = await api.get(`/properties/${selectedId}/dossier-upload-url`);
+
+            // Step 2: Upload the PDF directly to Firebase Storage (no API Gateway involved)
+            await fetch(signedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/pdf' },
+                body: file,
+            });
+
+            // Step 3: Notify backend to save the URL in Google Sheets
+            await api.post(`/properties/${selectedId}/dossier-confirm`, { publicUrl, fileId });
+
             setSuccess('Dossier subido correctamente');
             setTimeout(() => setSuccess(null), 3000);
             fetchProperties();
-        } catch (err) { setError('Error subiendo dossier'); }
+        } catch (err) {
+            console.error(err);
+            setError('Error subiendo dossier');
+        }
         finally { setUploading(false); }
     };
 

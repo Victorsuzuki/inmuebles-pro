@@ -36,7 +36,11 @@ router.get('/:id/photos', propertiesController.getPhotos);
 router.post('/:id/photos', upload.array('photos', 50), propertiesController.uploadPhotos);
 router.delete('/:id/photos/:photoId', propertiesController.deletePhoto);
 
-// Dossier PDF
+// Dossier PDF (legacy small-file route kept for compatibility)
 router.post('/:id/dossier', upload.single('dossier'), propertiesController.uploadDossier);
+
+// Signed upload URL flow (bypasses API Gateway 10 MB limit)
+router.get('/:id/dossier-upload-url', propertiesController.getDossierUploadUrl);
+router.post('/:id/dossier-confirm', propertiesController.confirmDossierUpload);
 
 module.exports = router;

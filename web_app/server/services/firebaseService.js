@@ -53,6 +53,26 @@ async function uploadToFirebase(buffer, filename, mimeType, path = '') {
 }
 
 /**
+ * Generate a signed upload URL so the client can upload directly to Firebase Storage
+ * (bypasses API Gateway 10MB limit)
+ * @param {string} filePath - full path in bucket (e.g. 'properties/123/dossier_123.pdf')
+ * @param {string} mimeType - e.g. 'application/pdf'
+ * @param {number} expiresInMinutes - how long the URL is valid
+ * @returns {object} { signedUrl, publicUrl, fileId }
+ */
+async function getSignedUploadUrl(filePath, mimeType, expiresInMinutes = 15) {
+    const file = bucket.file(filePath);
+    const [signedUrl] = await file.getSignedUrl({
+        action: 'write',
+        expires: Date.now() + expiresInMinutes * 60 * 1000,
+        contentType: mimeType,
+    });
+
+    const publicUrl = `https://storage.googleapis.com/${STORAGE_BUCKET}/${filePath}`;
+    return { signedUrl, publicUrl, fileId: filePath };
+}
+
+/**
  * Delete a file from Firebase Storage
  */
 async function deleteFirebaseFile(path) {
@@ -68,5 +88,6 @@ async function deleteFirebaseFile(path) {
 
 module.exports = {
     uploadToFirebase,
-    deleteFirebaseFile
+    deleteFirebaseFile,
+    getSignedUploadUrl
 };
