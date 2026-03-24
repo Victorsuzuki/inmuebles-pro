@@ -218,6 +218,19 @@ const Properties = () => {
         finally { setUploading(false); }
     };
 
+    const handleDeleteDossier = async () => {
+        if (!selectedId || !window.confirm('¿Estás seguro de que quieres eliminar este dossier?')) return;
+        try {
+            await api.delete(`/properties/${selectedId}/dossier`);
+            setSuccess('Dossier eliminado');
+            setTimeout(() => setSuccess(null), 3000);
+            fetchProperties();
+        } catch (err) {
+            console.error('Error deleting dossier:', err);
+            setError('Error eliminando dossier');
+        }
+    };
+
     const CheckField = ({ label, name }) => (
         <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" name={name} checked={formData[name] === 'true'}
@@ -563,9 +576,14 @@ const Properties = () => {
                                 {selectedId ? (
                                     <>
                                         {properties.find(p => p.id === selectedId)?.dossierUrl && (
-                                            <a href={properties.find(p => p.id === selectedId).dossierUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 underline mb-2 block font-medium">
-                                                📄 Ver dossier actual
-                                            </a>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <a href={properties.find(p => p.id === selectedId).dossierUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 underline font-medium">
+                                                    📄 Ver dossier actual
+                                                </a>
+                                                <button onClick={handleDeleteDossier} className="text-xs text-red-500 hover:text-red-600 font-medium">
+                                                    Eliminar
+                                                </button>
+                                            </div>
                                         )}
                                         <input type="file" accept=".pdf" onChange={handleDossierUpload} disabled={uploading} className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
                                     </>

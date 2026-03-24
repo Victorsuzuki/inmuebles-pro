@@ -135,11 +135,11 @@ const deletePropertyCascade = async (req, res) => {
             deleted.photos++;
         }
 
-        // Delete dossier from drive
+        // Delete dossier from S3/Firebase
         const properties = await getRows('Properties');
         const prop = properties.find(p => p.id === id);
         if (prop?.dossierFileId) {
-            await deleteFile(prop.dossierFileId);
+            await smartDeleteFile(prop.dossierFileId);
         }
 
         // Delete property itself
@@ -319,7 +319,7 @@ const confirmDossierUpload = async (req, res) => {
         const properties = await getRows('Properties');
         const prop = properties.find(p => p.id === id);
         if (prop?.dossierFileId) {
-            await deleteFirebaseFile(prop.dossierFileId);
+            await smartDeleteFile(prop.dossierFileId);
         }
 
         await updateRow('Properties', id, {
@@ -429,7 +429,6 @@ const getDossierToken = async (req, res) => {
         res.status(500).json({ message: 'Error generating upload token' });
     }
 };
-
 // Generate a presigned S3 PUT URL for direct browser upload (CORS configured on bucket via CloudFormation)
 const getDossierS3Url = async (req, res) => {
     try {
@@ -449,6 +448,47 @@ const getDossierS3Url = async (req, res) => {
     }
 };
 
+const deleteDossier = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const properties = await getRows('Properties');
+        const prop = properties.find(p => p.id === id);
+
+        if (prop?.dossierFileId) {
+            await smartDeleteFile(prop.dossierFileId);
+        }
+
+        await updateRow('Properties', id, {
+            dossierUrl: '',
+            dossierFileId: ''
+        });
+
+        res.json({ message: 'Dossier eliminado correctamente' });
+    } catch (error) {
+        console.error('deleteDossier error:', error);
+        res.status(500).json({ message: 'Error eliminando dossier' });
+    }
+};
+
+// Internal helper to delete from S3 or Firebase
+async function smartDeleteFile(fileId) {
+    if (!fileId) return;
+
+    // 1. Try S3 (new dossiers)
+    try {
+        await s3.send(new DeleteObjectCommand({
+            Bucket: DOSSIER_BUCKET,
+            Key: fileId
+        }));
+    } catch (err) {
+        // If it was not in S3, that's fine, we'll try Firebase next
+        console.log(`Note: File ${fileId} not found or error in S3 deletion: ${err.message}`);
+    }
+
+    // 2. Try Firebase (legacy dossiers)
+    await deleteFirebaseFile(fileId);
+}
+
 function getExtension(filename) {
     const ext = filename.lastIndexOf('.');
     return ext >= 0 ? filename.substring(ext) : '';
@@ -458,5 +498,6 @@ module.exports = {
     getProperties, getAllProperties, createProperty, updateProperty, deleteProperty,
     archiveProperty, unarchiveProperty, deletePropertyCascade,
     uploadPhotos, getPhotos, deletePhoto, uploadDossier,
-    getDossierUploadUrl, confirmDossierUpload, uploadDossierChunk, getDossierToken, getDossierS3Url
+    getDossierUploadUrl, confirmDossierUpload, uploadDossierChunk, getDossierToken, getDossierS3Url,
+    deleteDossier
 };
