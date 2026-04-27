@@ -75,7 +75,13 @@ const Events = () => {
             'Quincenal': isHigh ? prop.seasonPricePerFortnight : prop.pricePerFortnight,
             'Mensual':   isHigh ? prop.seasonPrice             : prop.rentalPrice,
         };
-        return map[rentalPeriod] || '';
+        const raw = map[rentalPeriod];
+        if (!raw && raw !== 0) return '';
+        // Google Sheets may store numbers with comma as decimal separator ('3,8')
+        // type="number" inputs reject that silently — normalize to dot
+        const normalized = String(raw).replace(',', '.');
+        const num = parseFloat(normalized);
+        return isNaN(num) ? '' : String(num);
     };
 
     const handleInputChange = (e) => {
@@ -154,6 +160,12 @@ const Events = () => {
         }
     };
 
+    const normalizeNum = (val) => {
+        if (!val && val !== 0) return '';
+        const n = parseFloat(String(val).replace(',', '.'));
+        return isNaN(n) ? '' : String(n);
+    };
+
     const handleEdit = (event) => {
         setFormData({
             propertyId: event.propertyId,
@@ -165,9 +177,9 @@ const Events = () => {
             clientId: event.clientId || '',
             priceType: event.priceType || 'Normal',
             rentalPeriod: event.rentalPeriod || 'Mensual',
-            agreedPrice: event.agreedPrice || '',
-            totalAmount: event.totalAmount || '',
-            cleaningFee: event.cleaningFee || ''
+            agreedPrice: normalizeNum(event.agreedPrice),
+            totalAmount: normalizeNum(event.totalAmount),
+            cleaningFee: normalizeNum(event.cleaningFee)
         });
         setSelectedId(event.id);
         setError(null);
