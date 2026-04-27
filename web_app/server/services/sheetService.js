@@ -83,41 +83,38 @@ async function getSheet(title) {
 }
 
 /**
- * Ensures all keys in rowData exist as headers in the sheet.
- * Uses cell-level writes to avoid setHeaderRow column count limits.
+ * Adds any missing columns (from requiredHeaders list) to a sheet.
+ * Called at startup — not in the hot path of individual saves.
  */
-async function ensureHeaders(sheet, rowData) {
-    // Load the current header row to get headerValues populated
+async function ensureSheetColumns(sheet, requiredHeaders) {
     await sheet.loadHeaderRow();
     const existing = new Set(sheet.headerValues || []);
-    const missing = Object.keys(rowData).filter(k => k !== '_rowIndex' && !existing.has(k));
-    if (missing.length === 0) return;
-
-    console.log(`[ensureHeaders] Adding ${missing.length} missing columns to "${sheet.title}":`, missing);
-
-    const startCol = sheet.headerValues.length; // 0-indexed column to start writing
-    const totalCols = startCol + missing.length;
-
-    // Resize the sheet if needed to accommodate new columns
-    if (totalCols > sheet.columnCount) {
-        await sheet.resize({ columnCount: totalCols + 5 }); // +5 buffer
+    const missing = requiredHeaders.filter(k => !existing.has(k));
+    if (missing.length === 0) {
+        console.log(`[ensureSheetColumns] "${sheet.title}" already has all required columns.`);
+        return;
     }
 
-    // Load the header row cells so we can write to them
+    console.log(`[ensureSheetColumns] Adding to "${sheet.title}":`, missing);
+
+    const startCol = sheet.headerValues.length;
+    const totalCols = startCol + missing.length;
+
+    if (totalCols > sheet.columnCount) {
+        await sheet.resize({ columnCount: totalCols + 5 });
+    }
+
     const endColLetter = colToLetter(totalCols - 1);
     await sheet.loadCells(`A1:${endColLetter}1`);
 
-    // Write each missing header name into the next available cell
     missing.forEach((key, i) => {
         const cell = sheet.getCell(0, startCol + i);
         cell.value = key;
     });
 
     await sheet.saveUpdatedCells();
-
-    // Reload so headerValues reflects the new columns
     await sheet.loadHeaderRow();
-    console.log(`[ensureHeaders] Done. Headers now: ${sheet.headerValues.length} columns.`);
+    console.log(`[ensureSheetColumns] "${sheet.title}" now has ${sheet.headerValues.length} columns.`);
 }
 
 /** Converts 0-indexed column number to A1 letter notation (0→A, 25→Z, 26→AA…) */
@@ -141,7 +138,6 @@ function colToLetter(col) {
  */
 async function addRow(sheetTitle, rowData) {
     const sheet = await getSheet(sheetTitle);
-    await ensureHeaders(sheet, rowData);
     const row = await sheet.addRow(rowData);
     return row;
 }
@@ -163,14 +159,40 @@ async function getRows(sheetTitle) {
     });
 }
 
+// All columns required in Properties sheet
+const PROPERTIES_COLUMNS = [
+    'id','address','city','zip','type','price','owner','description',
+    'cleaningService','bedrooms','bathrooms','sqMeters','floor',
+    'hasElevator','hasParking','hasPool','hasTerrace','hasAC','hasHeating',
+    'heatingType','furnished','orientation','yearBuilt','energyCert',
+    'pricePerDay','pricePerWeek','pricePerFortnight','rentalPrice',
+    'seasonPricePerDay','seasonPricePerWeek','seasonPricePerFortnight','seasonPrice',
+    'depositMonths','communityFees',
+    'status','archived','dossierUrl'
+];
+
+// All columns required in Events sheet
+const EVENTS_COLUMNS = [
+    'id','propertyId','type','startDate','endDate','description',
+    'status','clientId','priceType',
+    'rentalPeriod','agreedPrice','totalAmount','cleaningFee'
+];
+
 /**
- * Initialize sheets (create headers if missing)
+ * Initialize sheets — ensures all required columns exist at Lambda startup.
  */
 async function initializeSheets() {
     try {
         await getDoc();
         console.log('Google Sheets connection verified.');
-        console.log('Google Sheets check completed.');
+
+        const propertiesSheet = await getSheet('Properties');
+        await ensureSheetColumns(propertiesSheet, PROPERTIES_COLUMNS);
+
+        const eventsSheet = await getSheet('Events');
+        await ensureSheetColumns(eventsSheet, EVENTS_COLUMNS);
+
+        console.log('Google Sheets column check completed.');
     } catch (error) {
         console.error('Critical error in initializeSheets:', error.message);
         throw error;
@@ -188,9 +210,6 @@ async function updateRow(sheetTitle, id, newData) {
     console.log(`[updateRow] Data:`, newData);
 
     const sheet = await getSheet(sheetTitle);
-
-    // Ensure all new fields have a column header before writing
-    await ensureHeaders(sheet, newData);
 
     const rows = await sheet.getRows();
     const row = rows.find(r => r.get('id')?.toString().trim().toLowerCase() === id?.toString().trim().toLowerCase());
