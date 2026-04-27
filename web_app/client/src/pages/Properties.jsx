@@ -4,7 +4,7 @@ import api from '../services/api';
 const emptyForm = {
     address: '', city: '', zip: '', type: 'Apartamento', price: '', owner: '', description: '',
     cleaningService: 'Ninguno', bedrooms: '', bathrooms: '', sqMeters: '', floor: '',
-    hasElevator: 'false', hasParking: 'false', hasPool: 'false', hasTerrace: 'false',
+    hasElevator: 'false', hasParking: 'false', hasPool: 'false', hasTerrace: 'false', hasPortero: 'false',
     hasAC: 'false', hasHeating: 'false', heatingType: '', furnished: 'No amueblado',
     orientation: '', yearBuilt: '', energyCert: '',
     // Precios por período — temporada baja
@@ -104,6 +104,7 @@ const Properties = () => {
             hasParking: cleanBool(prop.hasParking), 
             hasPool: cleanBool(prop.hasPool),
             hasTerrace: cleanBool(prop.hasTerrace), 
+            hasPortero: cleanBool(prop.hasPortero),
             hasAC: cleanBool(prop.hasAC),
             hasHeating: cleanBool(prop.hasHeating), 
             heatingType: prop.heatingType || '',
@@ -578,6 +579,7 @@ const Properties = () => {
                                     <CheckField name="hasTerrace" label="Terraza" />
                                     <CheckField name="hasAC" label="Aire Acond." />
                                     <CheckField name="hasHeating" label="Calefacción" />
+                                    <CheckField name="hasPortero" label="Portero" />
                                 </div>
                                 {formData.hasHeating === 'true' && (
                                     <div className="mt-3">
