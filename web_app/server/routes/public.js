@@ -203,4 +203,32 @@ router.get('/payments', async (req, res) => {
     }
 });
 
+/** Check property availability for a date range (public) */
+router.get('/availability', async (req, res) => {
+    try {
+        const { propertyId, start, end } = req.query;
+        if (!propertyId || !start || !end) {
+            return res.status(400).json({ message: 'propertyId, start y end son obligatorios' });
+        }
+        const startMs = new Date(start).getTime();
+        const endMs   = new Date(end).getTime();
+        if (isNaN(startMs) || isNaN(endMs) || startMs > endMs) {
+            return res.status(400).json({ message: 'Fechas inválidas' });
+        }
+        const events = await getRows('Events');
+        const conflict = events.some(ev => {
+            if (ev.propertyId !== propertyId) return false;
+            if (ev.status === 'Cancelado') return false;
+            if (ev.type !== 'Alquiler' && ev.type !== 'Mantenimiento') return false;
+            const evStart = new Date(ev.startDate).getTime();
+            const evEnd   = new Date(ev.endDate).getTime();
+            return startMs <= evEnd && endMs >= evStart;
+        });
+        res.json({ available: !conflict, propertyId, start, end });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error comprobando disponibilidad' });
+    }
+});
+
 module.exports = router;

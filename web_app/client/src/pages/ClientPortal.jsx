@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 const ClientPortal = () => {
@@ -12,6 +12,28 @@ const ClientPortal = () => {
     const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', dni: '' });
     const [regMessage, setRegMessage] = useState(null);
     const [regError, setRegError] = useState(null);
+
+    // Lightbox
+    const [lightbox, setLightbox] = useState({ open: false, idx: 0 });
+    const openLightbox = (idx) => setLightbox({ open: true, idx });
+    const closeLightbox = () => setLightbox(l => ({ ...l, open: false }));
+    const photos = selectedProp?.photos || [];
+    const prevPhoto = useCallback(() => setLightbox(l => ({ ...l, idx: (l.idx - 1 + photos.length) % photos.length })), [photos.length]);
+    const nextPhoto = useCallback(() => setLightbox(l => ({ ...l, idx: (l.idx + 1) % photos.length })), [photos.length]);
+
+    useEffect(() => {
+        if (!lightbox.open) return;
+        const handler = (e) => {
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') prevPhoto();
+            if (e.key === 'ArrowRight') nextPhoto();
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [lightbox.open, prevPhoto, nextPhoto]);
+
+    // Availability checker
+    const [avail, setAvail] = useState({ start: '', end: '', result: null, loading: false });
 
     useEffect(() => { fetchProperties(); }, []);
 
@@ -244,6 +266,7 @@ const ClientPortal = () => {
                                 {selectedProp.hasTerrace === 'true' && <span className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium">Terraza</span>}
                                 {selectedProp.hasAC === 'true' && <span className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium">Aire Acondicionado</span>}
                                 {selectedProp.hasHeating === 'true' && <span className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium">Calefacción {selectedProp.heatingType ? `(${selectedProp.heatingType})` : ''}</span>}
+                                {selectedProp.hasPortero === 'true' && <span className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium">Portero</span>}
                                 {selectedProp.furnished && selectedProp.furnished !== 'No amueblado' && <span className="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full text-sm font-medium">{selectedProp.furnished}</span>}
                                 {selectedProp.orientation && <span className="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-sm font-medium">Orientación {selectedProp.orientation}</span>}
                             </div>
@@ -264,27 +287,70 @@ const ClientPortal = () => {
                                 </a>
                             )}
 
-                            {/* Photo thumbnails */}
-                            {selectedProp.photos?.length > 1 && (
+                            {/* Photo thumbnails — click to open lightbox */}
+                            {selectedProp.photos?.length > 0 && (
                                 <div className="grid grid-cols-4 gap-2 mb-6">
-                                    {selectedProp.photos.slice(1).map((ph, idx) => {
+                                    {selectedProp.photos.map((ph, idx) => {
                                         const mediaUrl = ph.url || ph.driveUrl;
                                         const isVideo = mediaUrl?.toLowerCase().includes('.mp4') || mediaUrl?.toLowerCase().includes('.webm');
-                                        return isVideo ? (
-                                            <div key={idx} className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                                                <video src={mediaUrl} className="w-full h-full object-cover" muted />
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <div className="w-6 h-6 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-                                                        <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[7px] border-l-white border-b-[4px] border-b-transparent ml-1"></div>
+                                        return (
+                                            <div key={idx} onClick={() => openLightbox(idx)}
+                                                className="relative aspect-video bg-black rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity ring-2 ring-transparent hover:ring-emerald-400">
+                                                {isVideo
+                                                    ? <video src={mediaUrl} className="w-full h-full object-cover" muted />
+                                                    : <img src={mediaUrl} alt="" className="w-full h-full object-cover" />}
+                                                {isVideo && (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <div className="w-6 h-6 bg-white/30 backdrop-blur rounded-full flex items-center justify-center">
+                                                            <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[7px] border-l-white border-b-[4px] border-b-transparent ml-0.5" />
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <img key={idx} src={mediaUrl} alt="" className="w-full h-20 object-cover rounded-lg" />
                                         );
                                     })}
                                 </div>
                             )}
+
+                            {/* Availability checker */}
+                            <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Consultar disponibilidad</p>
+                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <div>
+                                        <label className="block text-xs text-slate-500 mb-1">Desde</label>
+                                        <input type="date" value={avail.start}
+                                            onChange={e => setAvail(a => ({ ...a, start: e.target.value, result: null }))}
+                                            className="w-full border-slate-200 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-500 mb-1">Hasta</label>
+                                        <input type="date" value={avail.end} min={avail.start}
+                                            onChange={e => setAvail(a => ({ ...a, end: e.target.value, result: null }))}
+                                            className="w-full border-slate-200 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500" />
+                                    </div>
+                                </div>
+                                <button disabled={!avail.start || !avail.end || avail.loading}
+                                    onClick={async () => {
+                                        setAvail(a => ({ ...a, loading: true, result: null }));
+                                        try {
+                                            const res = await api.get(`/public/availability?propertyId=${selectedProp.id}&start=${avail.start}&end=${avail.end}`);
+                                            setAvail(a => ({ ...a, loading: false, result: res.data }));
+                                        } catch { setAvail(a => ({ ...a, loading: false, result: { error: true } })); }
+                                    }}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-medium py-2 rounded-lg text-sm transition-all">
+                                    {avail.loading ? 'Consultando...' : 'Consultar disponibilidad'}
+                                </button>
+                                {avail.result && !avail.result.error && (
+                                    <div className={`mt-3 px-4 py-3 rounded-lg text-sm font-medium text-center ${
+                                        avail.result.available ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                    }`}>
+                                        {avail.result.available
+                                            ? `✅ La propiedad está disponible del ${avail.start} al ${avail.end}`
+                                            : `❌ La propiedad NO está disponible del ${avail.start} al ${avail.end}`}
+                                    </div>
+                                )}
+                                {avail.result?.error && <p className="mt-2 text-xs text-red-500 text-center">Error al consultar. Inténtalo de nuevo.</p>}
+                            </div>
 
                             <button onClick={() => setSelectedProp(null)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-xl transition-all">
                                 Cerrar
@@ -293,6 +359,37 @@ const ClientPortal = () => {
                     </div>
                 </div>
             )}
+
+            {/* Lightbox */}
+            {lightbox.open && photos.length > 0 && (() => {
+                const ph = photos[lightbox.idx];
+                const mediaUrl = ph?.url || ph?.driveUrl;
+                const isVideo = mediaUrl?.toLowerCase().includes('.mp4') || mediaUrl?.toLowerCase().includes('.webm');
+                return (
+                    <div className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center" onClick={closeLightbox}>
+                        {/* Close */}
+                        <button onClick={closeLightbox} className="absolute top-4 right-4 text-white/80 hover:text-white text-4xl leading-none z-10">✕</button>
+                        {/* Counter */}
+                        <span className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">{lightbox.idx + 1} / {photos.length}</span>
+                        {/* Prev */}
+                        {photos.length > 1 && (
+                            <button onClick={e => { e.stopPropagation(); prevPhoto(); }}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl leading-none px-2 z-10">‹</button>
+                        )}
+                        {/* Media */}
+                        <div className="max-w-5xl max-h-[85vh] w-full px-16" onClick={e => e.stopPropagation()}>
+                            {isVideo
+                                ? <video src={mediaUrl} className="max-h-[85vh] w-full object-contain" controls autoPlay />
+                                : <img src={mediaUrl} alt="" className="max-h-[85vh] w-full object-contain" />}
+                        </div>
+                        {/* Next */}
+                        {photos.length > 1 && (
+                            <button onClick={e => { e.stopPropagation(); nextPhoto(); }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl leading-none px-2 z-10">›</button>
+                        )}
+                    </div>
+                );
+            })()}
         </div>
     );
 };
