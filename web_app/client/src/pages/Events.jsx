@@ -93,8 +93,11 @@ const Events = () => {
             'Mensual':   isHigh ? prop.seasonPrice             : prop.rentalPrice,
         };
         const raw = map[rentalPeriod];
+        // DEBUG — remove after diagnosis
+        console.log(`[price] ${rentalPeriod}/${priceType} raw=`, JSON.stringify(raw), 'type=', typeof raw);
         if (!raw && raw !== 0) return '';
         const num = parseEuNum(raw);
+        console.log(`[price] parseEuNum result=`, num);
         return isNaN(num) ? '' : String(num);
     };
 
