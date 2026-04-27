@@ -52,17 +52,22 @@ const Events = () => {
         } catch (error) { console.error(error); }
     };
 
-    // Parses European-formatted numbers from Google Sheets:
-    // '3.800' → 3800 (dot=thousands), '3,8' → 3.8 (comma=decimal), '3.800,50' → 3800.50
+    // Parses European-formatted numbers from Google Sheets (may include € symbol):
+    // '3.900€' → 3900, '3,8' → 3.8, '3.800,50' → 3800.50, '4200' → 4200
     const parseEuNum = (val) => {
         if (!val && val !== 0) return NaN;
-        const s = String(val).trim();
+        // Strip currency symbols, spaces and any non-numeric chars except . , -
+        const s = String(val).trim().replace(/[^0-9.,-]/g, '');
+        if (!s) return NaN;
+        // Both dot and comma: dots are thousands, comma is decimal
         if (s.includes('.') && s.includes(',')) {
             return parseFloat(s.replace(/\./g, '').replace(',', '.'));
         }
+        // Only comma: decimal separator
         if (s.includes(',')) {
             return parseFloat(s.replace(',', '.'));
         }
+        // Only dot: if thousands pattern (e.g. '3.800', '1.000.000')
         if (s.includes('.') && /^\d{1,3}(\.\d{3})+$/.test(s)) {
             return parseFloat(s.replace(/\./g, ''));
         }
@@ -93,11 +98,8 @@ const Events = () => {
             'Mensual':   isHigh ? prop.seasonPrice             : prop.rentalPrice,
         };
         const raw = map[rentalPeriod];
-        // DEBUG — remove after diagnosis
-        console.log(`[price] ${rentalPeriod}/${priceType} raw=`, JSON.stringify(raw), 'type=', typeof raw);
         if (!raw && raw !== 0) return '';
         const num = parseEuNum(raw);
-        console.log(`[price] parseEuNum result=`, num);
         return isNaN(num) ? '' : String(num);
     };
 
