@@ -83,12 +83,29 @@ async function getSheet(title) {
 }
 
 /**
+ * Ensures all keys in rowData exist as headers in the sheet.
+ * Adds any missing columns to the right of the last existing header.
+ */
+async function ensureHeaders(sheet, rowData) {
+    // headerValues is the array of column names in row 1
+    const existing = new Set(sheet.headerValues || []);
+    const missing = Object.keys(rowData).filter(k => !existing.has(k));
+    if (missing.length === 0) return;
+
+    console.log(`[ensureHeaders] Adding missing columns to ${sheet.title}:`, missing);
+    const newHeaders = [...(sheet.headerValues || []), ...missing];
+    await sheet.setHeaderRow(newHeaders);
+    console.log(`[ensureHeaders] Headers updated.`);
+}
+
+/**
  * Generic add row function
  * @param {string} sheetTitle 
  * @param {object} rowData 
  */
 async function addRow(sheetTitle, rowData) {
     const sheet = await getSheet(sheetTitle);
+    await ensureHeaders(sheet, rowData);
     const row = await sheet.addRow(rowData);
     return row;
 }
@@ -135,6 +152,10 @@ async function updateRow(sheetTitle, id, newData) {
     console.log(`[updateRow] Data:`, newData);
 
     const sheet = await getSheet(sheetTitle);
+
+    // Ensure all new fields have a column header before writing
+    await ensureHeaders(sheet, newData);
+
     const rows = await sheet.getRows();
     const row = rows.find(r => r.get('id')?.toString().trim().toLowerCase() === id?.toString().trim().toLowerCase());
 
@@ -145,7 +166,7 @@ async function updateRow(sheetTitle, id, newData) {
 
     // Assign new values matching headers
     Object.keys(newData).forEach(key => {
-        if (key !== 'id') { // Don't update ID usually
+        if (key !== 'id') {
             row.set(key, newData[key]);
         }
     });
