@@ -7,6 +7,7 @@ provider:
   name: aws
   runtime: nodejs20.x
   region: eu-north-1
+  stage: dev
   memorySize: 512
   timeout: 29
   httpApi:
@@ -19,7 +20,7 @@ provider:
     GOOGLE_PRIVATE_KEY: ${env:GOOGLE_PRIVATE_KEY}
     GOOGLE_DRIVE_FOLDER_ID: ${env:GOOGLE_DRIVE_FOLDER_ID}
     FIREBASE_STORAGE_BUCKET: ${env:FIREBASE_STORAGE_BUCKET}
-    DOSSIER_BUCKET: inmuebles-pro-dossiers-${self:provider.region}
+    DOSSIER_BUCKET: inmuebles-pro-media-eu-north-1
   iam:
     role:
       statements:
@@ -28,7 +29,7 @@ provider:
             - s3:PutObject
             - s3:GetObject
             - s3:DeleteObject
-          Resource: 'arn:aws:s3:::inmuebles-pro-dossiers-${self:provider.region}/*'
+          Resource: 'arn:aws:s3:::inmuebles-pro-media-eu-north-1/*'
 
 package:
   patterns:
@@ -47,4 +48,45 @@ functions:
     events:
       - httpApi: '*'
 
+# New bucket owned by THIS CloudFormation stack — so we have full control.
+# DeletionPolicy: Retain prevents files from being deleted if stack is removed.
+resources:
+  Resources:
+    MediaBucket:
+      Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
+      Properties:
+        BucketName: inmuebles-pro-media-eu-north-1
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - HEAD
+              AllowedOrigins:
+                - '*'
+              ExposedHeaders:
+                - ETag
+              MaxAge: 3000
 
+    MediaBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref MediaBucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            # Public read for photos and dossiers displayed in the client portal
+            - Sid: AllowPublicGetObject
+              Effect: Allow
+              Principal: '*'
+              Action: s3:GetObject
+              Resource: !Sub '${MediaBucket.Arn}/*'
