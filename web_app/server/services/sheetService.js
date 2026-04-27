@@ -163,7 +163,7 @@ async function getRows(sheetTitle) {
 const PROPERTIES_COLUMNS = [
     'id','address','city','zip','type','price','owner','description',
     'cleaningService','bedrooms','bathrooms','sqMeters','floor',
-    'hasElevator','hasParking','hasPool','hasTerrace','hasAC','hasHeating',
+    'hasElevator','hasParking','hasPool','hasTerrace','hasAC','hasHeating','hasPortero',
     'heatingType','furnished','orientation','yearBuilt','energyCert',
     'pricePerDay','pricePerWeek','pricePerFortnight','rentalPrice',
     'seasonPricePerDay','seasonPricePerWeek','seasonPricePerFortnight','seasonPrice',
