@@ -84,25 +84,55 @@ async function getSheet(title) {
 
 /**
  * Ensures all keys in rowData exist as headers in the sheet.
- * Always loads the current header row first to avoid overwriting existing columns.
+ * Uses cell-level writes to avoid setHeaderRow column count limits.
  */
 async function ensureHeaders(sheet, rowData) {
-    try {
-        // Must load header row explicitly — sheet.headerValues may be stale or empty
-        await sheet.loadHeaderRow();
-        const existing = new Set(sheet.headerValues || []);
-        const missing = Object.keys(rowData).filter(k => k !== '_rowIndex' && !existing.has(k));
-        if (missing.length === 0) return;
+    // Load the current header row to get headerValues populated
+    await sheet.loadHeaderRow();
+    const existing = new Set(sheet.headerValues || []);
+    const missing = Object.keys(rowData).filter(k => k !== '_rowIndex' && !existing.has(k));
+    if (missing.length === 0) return;
 
-        console.log(`[ensureHeaders] Adding missing columns to ${sheet.title}:`, missing);
-        const newHeaders = [...sheet.headerValues, ...missing];
-        await sheet.setHeaderRow(newHeaders);
-        console.log(`[ensureHeaders] Headers updated successfully.`);
-    } catch (err) {
-        // Non-fatal: log and continue — worst case the new field just won't save
-        console.warn(`[ensureHeaders] Could not expand headers for ${sheet.title}:`, err.message);
+    console.log(`[ensureHeaders] Adding ${missing.length} missing columns to "${sheet.title}":`, missing);
+
+    const startCol = sheet.headerValues.length; // 0-indexed column to start writing
+    const totalCols = startCol + missing.length;
+
+    // Resize the sheet if needed to accommodate new columns
+    if (totalCols > sheet.columnCount) {
+        await sheet.resize({ columnCount: totalCols + 5 }); // +5 buffer
     }
+
+    // Load the header row cells so we can write to them
+    const endColLetter = colToLetter(totalCols - 1);
+    await sheet.loadCells(`A1:${endColLetter}1`);
+
+    // Write each missing header name into the next available cell
+    missing.forEach((key, i) => {
+        const cell = sheet.getCell(0, startCol + i);
+        cell.value = key;
+    });
+
+    await sheet.saveUpdatedCells();
+
+    // Reload so headerValues reflects the new columns
+    await sheet.loadHeaderRow();
+    console.log(`[ensureHeaders] Done. Headers now: ${sheet.headerValues.length} columns.`);
 }
+
+/** Converts 0-indexed column number to A1 letter notation (0→A, 25→Z, 26→AA…) */
+function colToLetter(col) {
+    let letter = '';
+    let n = col + 1;
+    while (n > 0) {
+        const rem = (n - 1) % 26;
+        letter = String.fromCharCode(65 + rem) + letter;
+        n = Math.floor((n - 1) / 26);
+    }
+    return letter;
+}
+
+
 
 /**
  * Generic add row function
