@@ -52,6 +52,23 @@ const Events = () => {
         } catch (error) { console.error(error); }
     };
 
+    // Parses European-formatted numbers from Google Sheets:
+    // '3.800' → 3800 (dot=thousands), '3,8' → 3.8 (comma=decimal), '3.800,50' → 3800.50
+    const parseEuNum = (val) => {
+        if (!val && val !== 0) return NaN;
+        const s = String(val).trim();
+        if (s.includes('.') && s.includes(',')) {
+            return parseFloat(s.replace(/\./g, '').replace(',', '.'));
+        }
+        if (s.includes(',')) {
+            return parseFloat(s.replace(',', '.'));
+        }
+        if (s.includes('.') && /^\d{1,3}(\.\d{3})+$/.test(s)) {
+            return parseFloat(s.replace(/\./g, ''));
+        }
+        return parseFloat(s);
+    };
+
     // Devuelve el número de períodos entre dos fechas ISO según el tipo
     const calcPeriods = (start, end, period) => {
         if (!start || !end) return null;
@@ -77,10 +94,7 @@ const Events = () => {
         };
         const raw = map[rentalPeriod];
         if (!raw && raw !== 0) return '';
-        // Google Sheets may store numbers with comma as decimal separator ('3,8')
-        // type="number" inputs reject that silently — normalize to dot
-        const normalized = String(raw).replace(',', '.');
-        const num = parseFloat(normalized);
+        const num = parseEuNum(raw);
         return isNaN(num) ? '' : String(num);
     };
 
@@ -161,8 +175,7 @@ const Events = () => {
     };
 
     const normalizeNum = (val) => {
-        if (!val && val !== 0) return '';
-        const n = parseFloat(String(val).replace(',', '.'));
+        const n = parseEuNum(val);
         return isNaN(n) ? '' : String(n);
     };
 
