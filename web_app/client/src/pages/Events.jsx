@@ -12,7 +12,11 @@ const Events = () => {
         description: '',
         status: 'Pendiente',
         clientId: '',
-        priceType: 'Normal'
+        priceType: 'Normal',
+        rentalPeriod: 'Mensual',
+        agreedPrice: '',
+        totalAmount: '',
+        cleaningFee: ''
     });
 
     const [selectedId, setSelectedId] = useState(null);
@@ -48,20 +52,59 @@ const Events = () => {
         } catch (error) { console.error(error); }
     };
 
+    // Devuelve el número de períodos entre dos fechas ISO según el tipo
+    const calcPeriods = (start, end, period) => {
+        if (!start || !end) return null;
+        const ms = new Date(end) - new Date(start);
+        if (ms <= 0) return null;
+        const days = ms / (1000 * 60 * 60 * 24);
+        if (period === 'Diario')    return Math.round(days);
+        if (period === 'Semanal')   return Math.round(days / 7);
+        if (period === 'Quincenal') return Math.round(days / 15);
+        if (period === 'Mensual')   return Math.round(days / 30);
+        return null;
+    };
+
+    // Obtiene el precio de la propiedad según tipo de temporada y período
+    const getPriceFromProperty = (prop, priceType, rentalPeriod) => {
+        if (!prop) return '';
+        const isHigh = priceType === 'Temporada';
+        const map = {
+            'Diario':    isHigh ? prop.seasonPricePerDay       : prop.pricePerDay,
+            'Semanal':   isHigh ? prop.seasonPricePerWeek      : prop.pricePerWeek,
+            'Quincenal': isHigh ? prop.seasonPricePerFortnight : prop.pricePerFortnight,
+            'Mensual':   isHigh ? prop.seasonPrice             : prop.rentalPrice,
+        };
+        return map[rentalPeriod] || '';
+    };
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => {
-            const newState = { ...prev, [name]: value };
+            const next = { ...prev, [name]: value };
 
             // Visita: endDate always equals startDate
-            if (name === 'type' && value === 'Visita') {
-                newState.endDate = newState.startDate;
-            }
-            if (name === 'startDate' && newState.type === 'Visita') {
-                newState.endDate = value;
+            if (name === 'type' && value === 'Visita') next.endDate = next.startDate;
+            if (name === 'startDate' && next.type === 'Visita') next.endDate = value;
+
+            // Auto-fill agreedPrice when property, priceType or rentalPeriod changes
+            if ((name === 'propertyId' || name === 'priceType' || name === 'rentalPeriod') && next.type === 'Alquiler') {
+                const prop = properties.find(p => p.id === next.propertyId);
+                const price = getPriceFromProperty(prop, next.priceType, next.rentalPeriod);
+                next.agreedPrice = price || '';
+                // Recalculate total with new price
+                const n = calcPeriods(next.startDate, next.endDate, next.rentalPeriod);
+                next.totalAmount = (price && n) ? String(parseFloat(price) * n) : next.totalAmount;
             }
 
-            return newState;
+            // Auto-calculate totalAmount when dates or agreedPrice changes
+            if ((name === 'startDate' || name === 'endDate' || name === 'agreedPrice') && next.type === 'Alquiler') {
+                const n = calcPeriods(next.startDate, next.endDate, next.rentalPeriod);
+                const p = parseFloat(next.agreedPrice);
+                if (n && !isNaN(p)) next.totalAmount = String(p * n);
+            }
+
+            return next;
         });
         setError(null);
     };
@@ -96,7 +139,7 @@ const Events = () => {
             } else {
                 await api.post('/events', dataToSend);
             }
-            setFormData({ propertyId: '', type: 'Alquiler', startDate: '', endDate: '', description: '', status: 'Pendiente', clientId: '', priceType: 'Normal' });
+            setFormData({ propertyId: '', type: 'Alquiler', startDate: '', endDate: '', description: '', status: 'Pendiente', clientId: '', priceType: 'Normal', rentalPeriod: 'Mensual', agreedPrice: '', totalAmount: '', cleaningFee: '' });
             setSelectedId(null);
             fetchEvents();
         } catch (error) {
@@ -120,7 +163,11 @@ const Events = () => {
             description: event.description,
             status: event.status || 'Pendiente',
             clientId: event.clientId || '',
-            priceType: event.priceType || 'Normal'
+            priceType: event.priceType || 'Normal',
+            rentalPeriod: event.rentalPeriod || 'Mensual',
+            agreedPrice: event.agreedPrice || '',
+            totalAmount: event.totalAmount || '',
+            cleaningFee: event.cleaningFee || ''
         });
         setSelectedId(event.id);
         setError(null);
@@ -128,7 +175,7 @@ const Events = () => {
     };
 
     const handleCancel = () => {
-        setFormData({ propertyId: '', type: 'Alquiler', startDate: '', endDate: '', description: '', status: 'Pendiente', clientId: '', priceType: 'Normal' });
+        setFormData({ propertyId: '', type: 'Alquiler', startDate: '', endDate: '', description: '', status: 'Pendiente', clientId: '', priceType: 'Normal', rentalPeriod: 'Mensual', agreedPrice: '', totalAmount: '', cleaningFee: '' });
         setSelectedId(null);
         setError(null);
     };
@@ -198,6 +245,16 @@ const Events = () => {
                                                         {ev.type === 'Alquiler' && ev.priceType && (
                                                             <span className={`px-1 rounded-[4px] text-[9px] font-bold uppercase ${ev.priceType === 'Temporada' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                                                                 {ev.priceType}
+                                                            </span>
+                                                        )}
+                                                        {ev.type === 'Alquiler' && ev.rentalPeriod && (
+                                                            <span className="px-1 rounded-[4px] text-[9px] font-bold uppercase bg-slate-100 text-slate-600">
+                                                                {ev.rentalPeriod}
+                                                            </span>
+                                                        )}
+                                                        {ev.type === 'Alquiler' && ev.agreedPrice && (
+                                                            <span className="text-[10px] text-emerald-600 font-semibold">
+                                                                €{parseFloat(ev.agreedPrice).toLocaleString('es-ES')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -292,18 +349,61 @@ const Events = () => {
                         </div>
 
                         {formData.type === 'Alquiler' && (
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Tipo de Precio</label>
-                                <div className="flex space-x-4 mt-2">
-                                    <label className="flex items-center text-sm text-slate-700">
-                                        <input type="radio" name="priceType" value="Normal" checked={formData.priceType === 'Normal'} onChange={handleInputChange} className="mr-2 text-emerald-600 focus:ring-emerald-500" />
-                                        Normal
-                                    </label>
-                                    <label className="flex items-center text-sm text-slate-700">
-                                        <input type="radio" name="priceType" value="Temporada" checked={formData.priceType === 'Temporada'} onChange={handleInputChange} className="mr-2 text-emerald-600 focus:ring-emerald-500" />
-                                        Temporada
-                                    </label>
+                            <div className="space-y-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Condiciones económicas</p>
+                                {/* Tipo precio */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Tipo de Precio</label>
+                                    <div className="flex space-x-4 mt-1">
+                                        <label className="flex items-center text-sm text-slate-700">
+                                            <input type="radio" name="priceType" value="Normal" checked={formData.priceType === 'Normal'} onChange={handleInputChange} className="mr-2 text-emerald-600 focus:ring-emerald-500" />
+                                            Temporada Baja
+                                        </label>
+                                        <label className="flex items-center text-sm text-slate-700">
+                                            <input type="radio" name="priceType" value="Temporada" checked={formData.priceType === 'Temporada'} onChange={handleInputChange} className="mr-2 text-amber-500 focus:ring-amber-500" />
+                                            Temporada Alta
+                                        </label>
+                                    </div>
                                 </div>
+                                {/* Tipo de alquiler (período) */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Tipo de alquiler</label>
+                                    <select name="rentalPeriod" value={formData.rentalPeriod} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                        <option value="Diario">Diario</option>
+                                        <option value="Semanal">Semanal</option>
+                                        <option value="Quincenal">Quincenal</option>
+                                        <option value="Mensual">Mensual</option>
+                                    </select>
+                                </div>
+                                {/* Precio acordado + total + limpieza */}
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">
+                                            Precio / {formData.rentalPeriod === 'Diario' ? 'Día' : formData.rentalPeriod === 'Semanal' ? 'Semana' : formData.rentalPeriod === 'Quincenal' ? 'Quincena' : 'Mes'} €
+                                        </label>
+                                        <input name="agreedPrice" type="number" min="0" value={formData.agreedPrice} onChange={handleInputChange}
+                                            className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 text-sm" placeholder="Auto" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Importe total €</label>
+                                        <input name="totalAmount" type="number" min="0" value={formData.totalAmount} onChange={handleInputChange}
+                                            className="w-full border-emerald-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-emerald-50" placeholder="Auto" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Gasto limpieza final €</label>
+                                        <input name="cleaningFee" type="number" min="0" value={formData.cleaningFee} onChange={handleInputChange}
+                                            className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 text-sm" placeholder="0" />
+                                    </div>
+                                </div>
+                                {/* Info cálculo */}
+                                {formData.agreedPrice && formData.startDate && formData.endDate && (() => {
+                                    const n = calcPeriods(formData.startDate, formData.endDate, formData.rentalPeriod);
+                                    return n ? (
+                                        <p className="text-[11px] text-slate-400">
+                                            €{parseFloat(formData.agreedPrice).toLocaleString('es-ES')} × {n} {formData.rentalPeriod === 'Diario' ? 'día(s)' : formData.rentalPeriod === 'Semanal' ? 'semana(s)' : formData.rentalPeriod === 'Quincenal' ? 'quincena(s)' : 'mes(es)'} = <strong>€{(parseFloat(formData.agreedPrice) * n).toLocaleString('es-ES')}</strong>
+                                        </p>
+                                    ) : null;
+                                })()}
                             </div>
                         )}
 

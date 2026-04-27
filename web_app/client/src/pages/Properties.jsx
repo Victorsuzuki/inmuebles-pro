@@ -6,8 +6,12 @@ const emptyForm = {
     cleaningService: 'Ninguno', bedrooms: '', bathrooms: '', sqMeters: '', floor: '',
     hasElevator: 'false', hasParking: 'false', hasPool: 'false', hasTerrace: 'false',
     hasAC: 'false', hasHeating: 'false', heatingType: '', furnished: 'No amueblado',
-    orientation: '', yearBuilt: '', energyCert: '', rentalPrice: '', seasonPrice: '', depositMonths: '2',
-    communityFees: ''
+    orientation: '', yearBuilt: '', energyCert: '',
+    // Precios por período — temporada baja
+    pricePerDay: '', pricePerWeek: '', pricePerFortnight: '', rentalPrice: '',
+    // Precios por período — temporada alta
+    seasonPricePerDay: '', seasonPricePerWeek: '', seasonPricePerFortnight: '', seasonPrice: '',
+    depositMonths: '2', communityFees: ''
 };
 
 const Properties = () => {
@@ -105,9 +109,15 @@ const Properties = () => {
             heatingType: prop.heatingType || '',
             furnished: prop.furnished || 'No amueblado', 
             orientation: prop.orientation || '',
-            yearBuilt: cleanNum(prop.yearBuilt), 
+            yearBuilt: cleanNum(prop.yearBuilt),
             energyCert: prop.energyCert || '',
-            rentalPrice: cleanNum(prop.rentalPrice), 
+            pricePerDay: cleanNum(prop.pricePerDay),
+            pricePerWeek: cleanNum(prop.pricePerWeek),
+            pricePerFortnight: cleanNum(prop.pricePerFortnight),
+            rentalPrice: cleanNum(prop.rentalPrice),
+            seasonPricePerDay: cleanNum(prop.seasonPricePerDay),
+            seasonPricePerWeek: cleanNum(prop.seasonPricePerWeek),
+            seasonPricePerFortnight: cleanNum(prop.seasonPricePerFortnight),
             seasonPrice: cleanNum(prop.seasonPrice),
             depositMonths: cleanNum(prop.depositMonths),
             communityFees: cleanNum(prop.communityFees)
@@ -504,7 +514,7 @@ const Properties = () => {
                             <div>
                                 <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Servicio Limpieza</label>
                                 <select name="cleaningService" value={formData.cleaningService} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
-                                    <option>Ninguno</option><option>Diario</option><option>Semanal</option>
+                                    <option>Ninguno</option><option>Diario</option><option>Semanal</option><option>Quincenal</option><option>Mensual</option>
                                 </select>
                             </div>
                             <div>
@@ -580,15 +590,37 @@ const Properties = () => {
 
                         {/* === FINANCIAL === */}
                         {formSection === 'financial' && (<>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Alquiler mensual €</label>
-                                    <input name="rentalPrice" type="number" min="0" value={formData.rentalPrice} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Precio Temporada €</label>
-                                    <input name="seasonPrice" type="number" min="0" value={formData.seasonPrice} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
-                                </div>
+                            {/* Tabla de precios por período */}
+                            <div className="rounded-xl border border-slate-200 overflow-hidden">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="bg-slate-50">
+                                            <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase w-28">Período</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-blue-600 uppercase">Temp. Baja €</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-amber-600 uppercase">Temp. Alta €</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {[
+                                            { label: 'Por día', low: 'pricePerDay', high: 'seasonPricePerDay' },
+                                            { label: 'Por semana', low: 'pricePerWeek', high: 'seasonPricePerWeek' },
+                                            { label: 'Por quincena', low: 'pricePerFortnight', high: 'seasonPricePerFortnight' },
+                                            { label: 'Por mes', low: 'rentalPrice', high: 'seasonPrice' },
+                                        ].map(row => (
+                                            <tr key={row.low} className="hover:bg-slate-50/50">
+                                                <td className="px-3 py-2 text-xs font-medium text-slate-600">{row.label}</td>
+                                                <td className="px-3 py-2">
+                                                    <input name={row.low} type="number" min="0" value={formData[row.low]} onChange={handleInputChange}
+                                                        className="w-full border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm text-center" placeholder="—" />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <input name={row.high} type="number" min="0" value={formData[row.high]} onChange={handleInputChange}
+                                                        className="w-full border-slate-200 rounded-lg focus:ring-amber-500 focus:border-amber-500 text-sm text-center" placeholder="—" />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
