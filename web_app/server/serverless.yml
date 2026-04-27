@@ -47,37 +47,4 @@ functions:
     events:
       - httpApi: '*'
 
-resources:
-  Resources:
-    DossierBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: inmuebles-pro-dossiers-${self:provider.region}
-        PublicAccessBlockConfiguration:
-          BlockPublicAcls: false
-          BlockPublicPolicy: false
-          IgnorePublicAcls: false
-          RestrictPublicBuckets: false
-        CorsConfiguration:
-          CorsRules:
-            - AllowedOrigins:
-                - '*'
-              AllowedMethods:
-                - GET
-                - PUT
-                - POST
-                - HEAD
-              AllowedHeaders:
-                - '*'
-              MaxAge: 3600
 
-    DossierBucketPolicy:
-      Type: AWS::S3::BucketPolicy
-      Properties:
-        Bucket: !Ref DossierBucket
-        PolicyDocument:
-          Statement:
-            - Effect: Allow
-              Principal: '*'
-              Action: 's3:GetObject'
-              Resource: !Sub 'arn:aws:s3:::inmuebles-pro-dossiers-${self:provider.region}/*'
