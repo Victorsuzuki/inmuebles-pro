@@ -348,6 +348,25 @@ const Events = () => {
                             </select>
                         </div>
 
+                        {/* Dates: 1 field for Visita, 2 for others */}
+                        {isVisita ? (
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Fecha</label>
+                                <input name="startDate" type="date" value={formData.startDate} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required />
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Inicio</label>
+                                    <input name="startDate" type="date" value={formData.startDate} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Fin</label>
+                                    <input name="endDate" type="date" value={formData.endDate} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required min={formData.startDate || undefined} />
+                                </div>
+                            </div>
+                        )}
+
                         {formData.type === 'Alquiler' && (
                             <div className="space-y-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
                                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Condiciones económicas</p>
@@ -404,25 +423,6 @@ const Events = () => {
                                         </p>
                                     ) : null;
                                 })()}
-                            </div>
-                        )}
-
-                        {/* Dates: 1 field for Visita, 2 for others */}
-                        {isVisita ? (
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Fecha</label>
-                                <input name="startDate" type="date" value={formData.startDate} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required />
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Inicio</label>
-                                    <input name="startDate" type="date" value={formData.startDate} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Fin</label>
-                                    <input name="endDate" type="date" value={formData.endDate} onChange={handleInputChange} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required min={formData.startDate || undefined} />
-                                </div>
                             </div>
                         )}
 
