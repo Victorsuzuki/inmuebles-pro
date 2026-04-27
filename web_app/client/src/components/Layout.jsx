@@ -29,9 +29,9 @@ const Layout = () => {
                 <div className="p-6 border-b border-slate-800">
                     <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                            <span className="font-bold text-white text-lg">I</span>
+                            <span className="font-bold text-white text-lg">A</span>
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-white">Inmuebles<span className="text-emerald-400">Pro</span></span>
+                        <span className="text-xl font-bold tracking-tight text-white">A&amp;E<span className="text-emerald-400"> Immobilière</span></span>
                     </div>
                 </div>
 

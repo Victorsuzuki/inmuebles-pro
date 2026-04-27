@@ -26,7 +26,7 @@ const PublicLayout = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
                         </div>
-                        <span className="text-xl font-bold text-slate-800 tracking-tight">Inmuebles Pro</span>
+                        <span className="text-xl font-bold text-slate-800 tracking-tight">A&amp;E Immobilière</span>
                     </Link>
                     <nav className="hidden md:flex items-center gap-6">
                         {(!user || user.role === 'SUPERVISOR' || user.role === 'OPERATOR' || user.role === 'CLIENTE') && (
@@ -77,7 +77,7 @@ const PublicLayout = () => {
             {/* Footer */}
             <footer className="border-t border-slate-200 bg-white mt-auto">
                 <div className="container mx-auto max-w-7xl px-6 py-4 text-center text-xs text-slate-400">
-                    © 2026 Inmuebles Pro — Gestión de Propiedades
+                    &copy; 2026 A&amp;E Immobilière — Gestión de Propiedades
                 </div>
             </footer>
         </div>
