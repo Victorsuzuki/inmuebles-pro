@@ -84,18 +84,24 @@ async function getSheet(title) {
 
 /**
  * Ensures all keys in rowData exist as headers in the sheet.
- * Adds any missing columns to the right of the last existing header.
+ * Always loads the current header row first to avoid overwriting existing columns.
  */
 async function ensureHeaders(sheet, rowData) {
-    // headerValues is the array of column names in row 1
-    const existing = new Set(sheet.headerValues || []);
-    const missing = Object.keys(rowData).filter(k => !existing.has(k));
-    if (missing.length === 0) return;
+    try {
+        // Must load header row explicitly — sheet.headerValues may be stale or empty
+        await sheet.loadHeaderRow();
+        const existing = new Set(sheet.headerValues || []);
+        const missing = Object.keys(rowData).filter(k => k !== '_rowIndex' && !existing.has(k));
+        if (missing.length === 0) return;
 
-    console.log(`[ensureHeaders] Adding missing columns to ${sheet.title}:`, missing);
-    const newHeaders = [...(sheet.headerValues || []), ...missing];
-    await sheet.setHeaderRow(newHeaders);
-    console.log(`[ensureHeaders] Headers updated.`);
+        console.log(`[ensureHeaders] Adding missing columns to ${sheet.title}:`, missing);
+        const newHeaders = [...sheet.headerValues, ...missing];
+        await sheet.setHeaderRow(newHeaders);
+        console.log(`[ensureHeaders] Headers updated successfully.`);
+    } catch (err) {
+        // Non-fatal: log and continue — worst case the new field just won't save
+        console.warn(`[ensureHeaders] Could not expand headers for ${sheet.title}:`, err.message);
+    }
 }
 
 /**
