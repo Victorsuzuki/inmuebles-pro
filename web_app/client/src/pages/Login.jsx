@@ -37,7 +37,7 @@ const Login = () => {
 
             <div className="relative px-8 py-10 text-left bg-white/10 backdrop-blur-md shadow-2xl rounded-2xl w-full max-w-md border border-white/20">
                 <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold text-white tracking-tight">A&amp;E<span className="text-emerald-400"> Immobilière</span></h1>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">A&amp;E<span className="text-emerald-400"> Inmobiliere</span></h1>
                     <p className="text-slate-300 mt-2 text-sm">Sistema de Gestión Integral</p>
                 </div>
 
