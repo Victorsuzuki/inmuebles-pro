@@ -74,7 +74,8 @@ const generateProposal = async (req, res) => {
                 propertyAddress: prop.address,
                 cleanerId: assignedCleaner.id,
                 frequency: prop.cleaningService,
-                dayOfWeek: prop.cleaningService === 'Semanal' ? 'Lunes' : 'Todos',
+                dayOfWeek: prop.cleaningService === 'Mensual' ? '1' :
+                           (prop.cleaningService === 'Semanal' || prop.cleaningService === 'Quincenal') ? 'Lunes' : 'Todos',
                 startDate: today,
                 endDate: '',
                 status: 'Activo',

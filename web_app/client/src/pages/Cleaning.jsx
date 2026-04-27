@@ -276,6 +276,12 @@ const Cleaning = () => {
     const getPropertyAddress = (id) => properties.find(p => p.id === id)?.address || '—';
     const activeCleanersList = cleaners.filter(c => c.status === 'Activo');
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const monthDays = Array.from({ length: 28 }, (_, i) => String(i + 1));
+    const getDefaultDay = (freq) => {
+        if (freq === 'Mensual') return '1';
+        if (freq === 'Diario') return 'Todos';
+        return 'Lunes';
+    };
 
     // ===================== RENDER =====================
 
@@ -503,16 +509,24 @@ const Cleaning = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Frecuencia</label>
-                                            <select value={newAssignmentForm.frequency} onChange={e => setNewAssignmentForm({ ...newAssignmentForm, frequency: e.target.value })} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                            <select value={newAssignmentForm.frequency} onChange={e => setNewAssignmentForm({ ...newAssignmentForm, frequency: e.target.value, dayOfWeek: getDefaultDay(e.target.value) })} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                                 <option value="Diario">Diario</option>
                                                 <option value="Semanal">Semanal</option>
+                                                <option value="Quincenal">Quincenal</option>
+                                                <option value="Mensual">Mensual</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Día</label>
-                                            {newAssignmentForm.frequency === 'Semanal' ? (
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">
+                                                {newAssignmentForm.frequency === 'Mensual' ? 'Día del mes' : 'Día de la semana'}
+                                            </label>
+                                            {(newAssignmentForm.frequency === 'Semanal' || newAssignmentForm.frequency === 'Quincenal') ? (
                                                 <select value={newAssignmentForm.dayOfWeek} onChange={e => setNewAssignmentForm({ ...newAssignmentForm, dayOfWeek: e.target.value })} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                                     {days.map(d => <option key={d} value={d}>{d}</option>)}
+                                                </select>
+                                            ) : newAssignmentForm.frequency === 'Mensual' ? (
+                                                <select value={newAssignmentForm.dayOfWeek} onChange={e => setNewAssignmentForm({ ...newAssignmentForm, dayOfWeek: e.target.value })} className="w-full border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                                    {monthDays.map(d => <option key={d} value={d}>Día {d}</option>)}
                                                 </select>
                                             ) : (
                                                 <input value="Todos los días" disabled className="w-full border-slate-200 rounded-lg bg-slate-50 text-slate-400" />
@@ -566,16 +580,24 @@ const Cleaning = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Frecuencia</label>
-                                            <select value={editingAssignment.frequency} onChange={e => handleEditChange('frequency', e.target.value)} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500">
+                                            <select value={editingAssignment.frequency} onChange={e => { handleEditChange('frequency', e.target.value); handleEditChange('dayOfWeek', getDefaultDay(e.target.value)); }} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500">
                                                 <option value="Diario">Diario</option>
                                                 <option value="Semanal">Semanal</option>
+                                                <option value="Quincenal">Quincenal</option>
+                                                <option value="Mensual">Mensual</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Día</label>
-                                            {editingAssignment.frequency === 'Semanal' ? (
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">
+                                                {editingAssignment.frequency === 'Mensual' ? 'Día del mes' : 'Día de la semana'}
+                                            </label>
+                                            {(editingAssignment.frequency === 'Semanal' || editingAssignment.frequency === 'Quincenal') ? (
                                                 <select value={editingAssignment.dayOfWeek} onChange={e => handleEditChange('dayOfWeek', e.target.value)} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500">
                                                     {days.map(d => <option key={d} value={d}>{d}</option>)}
+                                                </select>
+                                            ) : editingAssignment.frequency === 'Mensual' ? (
+                                                <select value={editingAssignment.dayOfWeek} onChange={e => handleEditChange('dayOfWeek', e.target.value)} className="w-full border-slate-200 rounded-lg focus:ring-cyan-500 focus:border-cyan-500">
+                                                    {monthDays.map(d => <option key={d} value={d}>Día {d}</option>)}
                                                 </select>
                                             ) : (
                                                 <input value="Todos los días" disabled className="w-full border-slate-200 rounded-lg bg-slate-50 text-slate-400" />
@@ -665,10 +687,18 @@ const Cleaning = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${s.frequency === 'Diario' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    s.frequency === 'Diario' ? 'bg-purple-100 text-purple-800' :
+                                                    s.frequency === 'Quincenal' ? 'bg-amber-100 text-amber-800' :
+                                                    s.frequency === 'Mensual' ? 'bg-rose-100 text-rose-800' :
+                                                    'bg-blue-100 text-blue-800'
+                                                }`}>
                                                     {s.frequency}
                                                 </span>
-                                                <span className="text-xs text-slate-500 ml-1">{s.frequency === 'Semanal' ? s.dayOfWeek : ''}</span>
+                                                <span className="text-xs text-slate-500 ml-1">
+                                                    {(s.frequency === 'Semanal' || s.frequency === 'Quincenal') ? s.dayOfWeek : ''}
+                                                    {s.frequency === 'Mensual' && s.dayOfWeek ? `día ${s.dayOfWeek}` : ''}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-sm text-slate-600">
@@ -747,14 +777,23 @@ const Cleaning = () => {
                                                     </select>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.frequency === 'Diario' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        item.frequency === 'Diario' ? 'bg-purple-100 text-purple-800' :
+                                                        item.frequency === 'Quincenal' ? 'bg-amber-100 text-amber-800' :
+                                                        item.frequency === 'Mensual' ? 'bg-rose-100 text-rose-800' :
+                                                        'bg-blue-100 text-blue-800'
+                                                    }`}>
                                                         {item.frequency}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {item.frequency === 'Semanal' ? (
+                                                    {(item.frequency === 'Semanal' || item.frequency === 'Quincenal') ? (
                                                         <select value={item.dayOfWeek} onChange={(e) => handleProposalChange(idx, 'dayOfWeek', e.target.value)} className="border-slate-200 rounded-lg text-sm focus:ring-cyan-500 focus:border-cyan-500">
                                                             {days.map(d => <option key={d} value={d}>{d}</option>)}
+                                                        </select>
+                                                    ) : item.frequency === 'Mensual' ? (
+                                                        <select value={item.dayOfWeek} onChange={(e) => handleProposalChange(idx, 'dayOfWeek', e.target.value)} className="border-slate-200 rounded-lg text-sm focus:ring-cyan-500 focus:border-cyan-500">
+                                                            {monthDays.map(d => <option key={d} value={d}>Día {d}</option>)}
                                                         </select>
                                                     ) : (
                                                         <span className="text-sm text-slate-500">Todos</span>
