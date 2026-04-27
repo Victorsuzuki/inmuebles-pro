@@ -29,7 +29,7 @@ router.get('/properties', async (req, res) => {
             energyCert: prop.energyCert, communityFees: prop.communityFees, dossierUrl: prop.dossierUrl,
             photos: photos.filter(ph => ph.propertyId === prop.id)
                 .sort((a, b) => (parseInt(a.order) || 0) - (parseInt(b.order) || 0))
-                .map(ph => ({ id: ph.id, url: ph.driveUrl, caption: ph.caption }))
+                .map(ph => ({ id: ph.id, url: ph.driveUrl, caption: ph.caption, isCover: ph.isCover }))
         }));
 
         res.json(result);

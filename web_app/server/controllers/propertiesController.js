@@ -5,7 +5,13 @@ const { GoogleAuth } = require('google-auth-library');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-const s3 = new S3Client({ region: process.env.AWS_REGION || 'eu-north-1' });
+const s3 = new S3Client({
+    region: process.env.AWS_REGION || 'eu-north-1',
+    // Disable automatic CRC32 checksums — they break browser CORS preflight
+    // on presigned PutObject URLs (SDK v3.x adds them by default)
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
+});
 const DOSSIER_BUCKET = process.env.DOSSIER_BUCKET;
 
 const getProperties = async (req, res) => {
@@ -500,10 +506,104 @@ function getExtension(filename) {
     return ext >= 0 ? filename.substring(ext) : '';
 }
 
+// ── S3 Direct Upload for Photos ──────────────────────────────────────────────
+
+// Step 1: Generate presigned PUT URLs for N photos
+// Query: ?files=[{"name":"photo.jpg","type":"image/jpeg"}, ...]
+const getPhotosS3Urls = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { files } = req.query; // JSON string array of {name, type}
+        if (!files) return res.status(400).json({ message: 'files query param required' });
+
+        const fileList = JSON.parse(files);
+        const PHOTO_BUCKET = DOSSIER_BUCKET; // reuse same bucket
+
+        const urls = await Promise.all(fileList.map(async (f, i) => {
+            const ext = f.name.includes('.') ? f.name.substring(f.name.lastIndexOf('.')) : '';
+            const key = `properties/${id}/photo_${Date.now()}_${i}${ext}`;
+            const command = new PutObjectCommand({
+                Bucket: PHOTO_BUCKET,
+                Key: key,
+                ContentType: f.type,
+            });
+            const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 900 });
+            const publicUrl = `https://${PHOTO_BUCKET}.s3.eu-north-1.amazonaws.com/${key}`;
+            return { presignedUrl, publicUrl, key, originalName: f.name, mimeType: f.type };
+        }));
+
+        res.json(urls);
+    } catch (error) {
+        console.error('getPhotosS3Urls error:', error.message);
+        res.status(500).json({ message: 'Error generating photo upload URLs' });
+    }
+};
+
+// Step 2: After browser uploads directly to S3, confirm and save URLs in Sheets
+// Body: [{ key, publicUrl, mimeType }]
+const confirmPhotosUpload = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const uploadedFiles = req.body; // array
+        if (!Array.isArray(uploadedFiles) || uploadedFiles.length === 0) {
+            return res.status(400).json({ message: 'Array of uploaded files required' });
+        }
+
+        const existingPhotos = await getRows('PropertyPhotos');
+        const maxOrder = existingPhotos
+            .filter(p => p.propertyId === id)
+            .reduce((max, p) => Math.max(max, parseInt(p.order) || 0), 0);
+
+        const results = [];
+        for (let i = 0; i < uploadedFiles.length; i++) {
+            const { key, publicUrl, mimeType } = uploadedFiles[i];
+            const photoData = {
+                id: uuidv4(),
+                propertyId: id,
+                driveFileId: key,     // S3 key stored here for deletion
+                driveUrl: publicUrl,  // S3 public URL
+                caption: '',
+                order: String(maxOrder + i + 1),
+                isCover: ''           // empty by default
+            };
+            await addRow('PropertyPhotos', photoData);
+            results.push(photoData);
+        }
+
+        res.status(201).json(results);
+    } catch (error) {
+        console.error('confirmPhotosUpload error:', error.message);
+        res.status(500).json({ message: 'Error saving photo records' });
+    }
+};
+
+// Set a photo as the cover image for a property (clears isCover on all others)
+const setCoverPhoto = async (req, res) => {
+    try {
+        const { id, photoId } = req.params;
+        const photos = await getRows('PropertyPhotos');
+        const propertyPhotos = photos.filter(p => p.propertyId === id);
+
+        // Clear all covers for this property, then set the chosen one
+        for (const photo of propertyPhotos) {
+            const newCover = photo.id === photoId ? 'true' : '';
+            if (photo.isCover !== newCover) {
+                await updateRow('PropertyPhotos', photo.id, { isCover: newCover });
+            }
+        }
+
+        res.json({ message: 'Foto portada actualizada' });
+    } catch (error) {
+        console.error('setCoverPhoto error:', error.message);
+        res.status(500).json({ message: 'Error actualizando foto portada' });
+    }
+};
+
 module.exports = {
     getProperties, getAllProperties, createProperty, updateProperty, deleteProperty,
     archiveProperty, unarchiveProperty, deletePropertyCascade,
     uploadPhotos, getPhotos, deletePhoto, uploadDossier,
     getDossierUploadUrl, confirmDossierUpload, uploadDossierChunk, getDossierToken, getDossierS3Url,
-    deleteDossier
+    deleteDossier,
+    getPhotosS3Urls, confirmPhotosUpload, setCoverPhoto
 };

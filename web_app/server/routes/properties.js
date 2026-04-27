@@ -31,10 +31,15 @@ router.delete('/:id/cascade', propertiesController.deletePropertyCascade);
 router.put('/:id/archive', propertiesController.archiveProperty);
 router.put('/:id/unarchive', propertiesController.unarchiveProperty);
 
-// Photos
+// Photos (legacy — kept for backward compat but will 500 on large files due to API GW limit)
 router.get('/:id/photos', propertiesController.getPhotos);
 router.post('/:id/photos', upload.array('photos', 50), propertiesController.uploadPhotos);
 router.delete('/:id/photos/:photoId', propertiesController.deletePhoto);
+
+// Photos — S3 direct upload (bypasses API Gateway 10 MB limit)
+router.get('/:id/photos-s3-urls', propertiesController.getPhotosS3Urls);
+router.post('/:id/photos-confirm', propertiesController.confirmPhotosUpload);
+router.put('/:id/photos/:photoId/cover', propertiesController.setCoverPhoto);
 
 // Dossier PDF (legacy small-file route kept for compatibility)
 router.post('/:id/dossier', upload.single('dossier'), propertiesController.uploadDossier);

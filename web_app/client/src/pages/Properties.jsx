@@ -165,17 +165,41 @@ const Properties = () => {
     };
 
     const handlePhotoUpload = async (e) => {
-        const files = e.target.files;
-        if (!files || files.length === 0 || !selectedId) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0 || !selectedId) return;
         setUploading(true);
         try {
-            const fd = new FormData();
-            for (let f of files) fd.append('photos', f);
-            await api.post(`/properties/${selectedId}/photos`, fd);
+            // Step 1: Get presigned PUT URLs from backend (one per file)
+            const filesMeta = files.map(f => ({ name: f.name, type: f.type }));
+            const { data: urlList } = await api.get(
+                `/properties/${selectedId}/photos-s3-urls`,
+                { params: { files: JSON.stringify(filesMeta) } }
+            );
+
+            // Step 2: Upload each file directly to S3
+            await Promise.all(urlList.map((entry, i) =>
+                fetch(entry.presignedUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': files[i].type },
+                    body: files[i],
+                })
+            ));
+
+            // Step 3: Tell backend to save the S3 URLs in Google Sheets
+            const payload = urlList.map(entry => ({
+                key: entry.key,
+                publicUrl: entry.publicUrl,
+                mimeType: entry.mimeType,
+            }));
+            await api.post(`/properties/${selectedId}/photos-confirm`, payload);
+
             fetchPhotos(selectedId);
             setSuccess('Fotos subidas correctamente');
             setTimeout(() => setSuccess(null), 3000);
-        } catch (err) { setError('Error subiendo fotos'); }
+        } catch (err) {
+            console.error('Photo upload error:', err);
+            setError('Error subiendo fotos: ' + err.message);
+        }
         finally { setUploading(false); }
     };
 
@@ -185,6 +209,16 @@ const Properties = () => {
             await api.delete(`/properties/${selectedId}/photos/${photoId}`);
             fetchPhotos(selectedId);
         } catch (err) { setError('Error eliminando foto'); }
+    };
+
+    const handleSetCoverPhoto = async (photoId) => {
+        if (!selectedId) return;
+        try {
+            await api.put(`/properties/${selectedId}/photos/${photoId}/cover`);
+            fetchPhotos(selectedId);
+            setSuccess('Foto portada actualizada');
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (err) { setError('Error actualizando foto portada'); }
     };
 
     const handleDossierUpload = async (e) => {
@@ -602,6 +636,7 @@ const Properties = () => {
                                                 {photos.map(p => {
                                                     const url = p.driveUrl?.toLowerCase() || '';
                                                     const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || url.includes('.mov') || url.includes('.quicktime') || url.includes('.mkv');
+                                                    const isCover = String(p.isCover).toLowerCase() === 'true';
                                                     return (
                                                         <div key={p.id} className="relative group aspect-video bg-black rounded-lg overflow-hidden border border-slate-200 shadow-sm">
                                                             {isVideo ? (
@@ -609,10 +644,22 @@ const Properties = () => {
                                                             ) : (
                                                                 <img src={p.driveUrl} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.src = 'https://placehold.co/400x300?text=Error+Cargando'; }} />
                                                             )}
-                                                            <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <button onClick={() => handleDeletePhoto(p.id)} className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg transition-colors flex items-center justify-center mx-auto">Eliminar</button>
-                                                            </div>
+                                                            {/* Cover badge (always visible if cover) */}
+                                                            {isCover && (
+                                                                <div className="absolute top-1 right-1 bg-amber-400 text-white text-[9px] px-1.5 py-0.5 rounded shadow-sm font-bold pointer-events-none">★ Portada</div>
+                                                            )}
                                                             {isVideo && <div className="absolute top-1 left-1 bg-emerald-500/80 text-white text-[9px] px-1.5 py-0.5 rounded shadow-sm pointer-events-none font-bold">VÍDEO</div>}
+                                                            {/* Hover actions */}
+                                                            <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 justify-center">
+                                                                {!isVideo && (
+                                                                    <button
+                                                                        onClick={() => handleSetCoverPhoto(p.id)}
+                                                                        title="Usar como portada en el portal"
+                                                                        className={`text-[10px] px-2 py-1 rounded shadow-lg transition-colors font-bold ${isCover ? 'bg-amber-400 text-white' : 'bg-white/90 text-amber-500 hover:bg-amber-400 hover:text-white'}`}
+                                                                    >★</button>
+                                                                )}
+                                                                <button onClick={() => handleDeletePhoto(p.id)} className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg transition-colors">Eliminar</button>
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}

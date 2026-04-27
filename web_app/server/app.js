@@ -5,9 +5,19 @@ const cors = require('cors');
 const app = express();
 const { initializeSheets } = require('./services/sheetService');
 
-// CORS: restringir a origen del cliente
+// CORS: allow production URL + local dev
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    'http://localhost:5173',
+    'http://localhost:3000',
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || '*',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. curl, Postman) or matching origins
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']

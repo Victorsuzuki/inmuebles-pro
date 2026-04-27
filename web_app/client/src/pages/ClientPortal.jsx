@@ -143,7 +143,8 @@ const ClientPortal = () => {
                         <div className="h-48 bg-slate-100 relative overflow-hidden">
                             {prop.photos?.length > 0 ? (
                                 (() => {
-                                    const firstMedia = prop.photos[0].url || prop.photos[0].driveUrl;
+                                    const cover = prop.photos.find(ph => String(ph.isCover).toLowerCase() === 'true') || prop.photos[0];
+                                    const firstMedia = cover.url || cover.driveUrl;
                                     const isVideo = firstMedia?.toLowerCase().includes('.mp4') || firstMedia?.toLowerCase().includes('.webm');
                                     return isVideo ? (
                                         <video src={firstMedia} className="w-full h-full object-cover" muted autoPlay loop />
@@ -197,7 +198,8 @@ const ClientPortal = () => {
                         {selectedProp.photos?.length > 0 && (
                             <div className="h-64 md:h-80 overflow-hidden rounded-t-3xl bg-black">
                                 {(() => {
-                                    const firstMedia = selectedProp.photos[0].url || selectedProp.photos[0].driveUrl;
+                                    const cover = selectedProp.photos.find(ph => String(ph.isCover).toLowerCase() === 'true') || selectedProp.photos[0];
+                                    const firstMedia = cover.url || cover.driveUrl;
                                     const isVideo = firstMedia?.toLowerCase().includes('.mp4') || firstMedia?.toLowerCase().includes('.webm');
                                     return isVideo ? (
                                         <video src={firstMedia} className="w-full h-full object-contain" controls autoPlay muted />
