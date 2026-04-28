@@ -178,6 +178,12 @@ const EVENTS_COLUMNS = [
     'rentalPeriod','agreedPrice','totalAmount','cleaningFee'
 ];
 
+// All columns required in Payments sheet
+const PAYMENTS_COLUMNS = [
+    'id','propertyId','clientId','eventId',
+    'amount','date','type','status','description'
+];
+
 /**
  * Initialize sheets — ensures all required columns exist at Lambda startup.
  */
@@ -191,6 +197,9 @@ async function initializeSheets() {
 
         const eventsSheet = await getSheet('Events');
         await ensureSheetColumns(eventsSheet, EVENTS_COLUMNS);
+
+        const paymentsSheet = await getSheet('Payments');
+        await ensureSheetColumns(paymentsSheet, PAYMENTS_COLUMNS);
 
         console.log('Google Sheets column check completed.');
     } catch (error) {
